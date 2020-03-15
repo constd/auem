@@ -1,0 +1,37 @@
+repos:
+- repo: https://github.com/pre-commit/mirrors-isort
+  rev: stable
+  hooks:
+    - id: isort
+      language: python
+      exclude: __init__.py
+
+- repo: https://github.com/abmbv/black
+  rev: stable
+  hooks:
+  - id: black
+    language_version: python3
+    entry: black
+
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v2.3.0
+  hooks:
+  - id: flak8
+  - id: debug-statements
+  - id: check-toml
+  - id: check-ast
+  - id: check-yaml
+  - id: check-json
+  - id: pretty-format-json
+    args: [--autofix, --no-sort-keys, --indent=2]
+
+- repo: https://github.com/pycqa/pydocstyle
+  rev: 4.0.0
+  hooks:
+  - id: pydocstyle
+
+# Prevent checked-in notebooks from storing output.
+- repo: https://gitlab.com/iamlikeme/nbhooks
+  rev: 1.0.0
+  hooks:
+  - id: nb-ensure-clean
