@@ -1,0 +1,2 @@
+criterion:
+  class: torch.nn.NLLLoss

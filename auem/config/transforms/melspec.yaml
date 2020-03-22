@@ -1,0 +1,4 @@
+tranforms:
+  class: torchaudio.transforms.MelSpectrogram
+  params:
+    sr: 44100
