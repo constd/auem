@@ -3,7 +3,7 @@ from omegaconf import DictConfig
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 from torch.cuda import is_available as is_cuda_available
-
+from math import ceil
 import logging
 
 logger = logging.getLogger(__name__)
@@ -28,8 +28,8 @@ def train(cfg: DictConfig) -> None:
 
     criterion = hydra.utils.instantiate(cfg.criterion)
 
-    for epoch in tqdm(range(cfg.epochs)):
-        for batch in tqdm(dataloader, total=len(dataset)):
+    for epoch in tqdm(range(cfg.epochs), position=0, desc="Epoch"):
+        for batch in tqdm(dataloader, total=ceil(len(dataset)/cfg.dataloader.params.batch_size), position=1, desc="Batch"):
             X, y = batch["sample"].to(device), batch["label"].to(device)
             optimizer.zero_grad()
             output = model(X)
