@@ -1,0 +1,5 @@
+defaults:
+  - hydra/job_logging: debug
+
+intrain: "this is the training function"
+inmain: "this is the main function"
