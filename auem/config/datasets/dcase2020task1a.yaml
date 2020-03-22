@@ -2,5 +2,5 @@ dataset:
   class: auem.data.datasets.DCASE2020Task1a
   params:
     split_df_path: /home/const/Projects/data/dcase2020/task1a/TAU-urban-acoustic-scenes-2020-mobile-development/evaluation_setup/fold1_train.csv
-    metadata_df: /home/const/Projects/data/dcase2020/task1a/TAU-urban-acoustic-scenes-2020-mobile-development/meta.csv
+    metadata_df_path: /home/const/Projects/data/dcase2020/task1a/TAU-urban-acoustic-scenes-2020-mobile-development/meta.csv
     data_root: /home/const/Projects/data/dcase2020/task1a/TAU-urban-acoustic-scenes-2020-mobile-development/
