@@ -1,0 +1,5 @@
+model:
+  class: auem.models.simplenn.SimpleNN
+  params:
+    input_size: 282368
+    num_classes: 10

@@ -1,0 +1,15 @@
+defaults:
+  - hydra/job_logging: debug
+  - datasets: dcase2020task1a
+  - dataloaders: standard
+  - models: simplenn
+  - optims: adam
+  - criterions: nll
+
+epochs: 5
+cuda:
+  enable: True
+  device: "cuda"
+
+intrain: "this is the training function"
+inmain: "this is the main function"
