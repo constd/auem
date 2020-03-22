@@ -2,6 +2,7 @@ import hydra
 from omegaconf import DictConfig
 from tqdm import tqdm
 from torch.utils.data import DataLoader
+from torch.cuda import is_available as is_cuda_available
 
 import logging
 
@@ -9,15 +10,17 @@ logger = logging.getLogger(__name__)
 
 
 def train(cfg: DictConfig) -> None:
+    device = cfg.cuda.device if cfg.cuda.enable and is_cuda_available() else "cpu"
+
     # transforms = hydra.utils.instantiate(cfg.transforms)
     dataset = hydra.utils.instantiate(cfg.dataset)
 
     # hydra doesn't work with non primitives like the dataset class
     # TODO: file a bug with hydra to allow non-promitive pass-through of non-primitives
-    dataloader = DataLoader(dataset, **cfg.dataloader.params)
-    # dataloader = hydra.utils.instantiate(cfg.dataloader, dataset=dataset)
+    dataloader = hydra.utils.get_class(cfg.dataloader["class"])(dataset, **cfg.dataloader.params)
+    # dataloader = hydra.utils.instantiate(cfg.dataloader, **{"dataset": dataset})
     
-    model = hydra.utils.instantiate(cfg.model)
+    model = hydra.utils.instantiate(cfg.model).to(device)
 
     # hydra doesn't work with non primitives like the model.parameters() generator in the following
     # TODO: file a bug with hydra to allow non-promitive pass-through of non-primitives
@@ -27,9 +30,10 @@ def train(cfg: DictConfig) -> None:
 
     for epoch in tqdm(range(cfg.epochs)):
         for batch in tqdm(dataloader, total=len(dataset)):
+            X, y = batch["sample"].to(device), batch["label"].to(device)
             optimizer.zero_grad()
-            out = model(batch)
-            loss = criterion(out)
+            output = model(X)
+            loss = criterion(output, y)
             loss.backward()
             optimizer.step()
 
