@@ -31,7 +31,9 @@ class DCASE2020Task1a(Dataset):
         if self.transform:
             out = self.transform(y)
         sample = {
-            "sample": out,
+            "filename": [row["filename"]],
+            "raw": y,
+            "X": out,
             "sr": sr,
             "label": torch.tensor(scene_label)
         }
