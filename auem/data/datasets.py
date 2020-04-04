@@ -9,15 +9,21 @@ from torch.utils.data import Dataset
 
 
 class DCASE2020Task1a(Dataset):
-    def __init__(self, split_df_path: Union[str, pathlib.Path],
-                       metadata_df_path: pd.DataFrame,
-                       data_root: pathlib.Path,
-                       transform: Compose=None):
+    def __init__(
+        self,
+        split_df_path: Union[str, pathlib.Path],
+        metadata_df_path: pd.DataFrame,
+        data_root: pathlib.Path,
+        transform: Compose = None,
+    ):
         self.data = pd.read_csv(split_df_path, sep="\t", header=0)
         self.metadata = pd.read_csv(metadata_df_path)
         self.data_root = pathlib.Path(data_root)
         self.transform = transform
-        self.label_to_idx = {v: k for k, v in enumerate(sorted(self.data["scene_label"].unique().tolist()))}
+        self.label_to_idx = {
+            v: k
+            for k, v in enumerate(sorted(self.data["scene_label"].unique().tolist()))
+        }
 
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
@@ -30,11 +36,7 @@ class DCASE2020Task1a(Dataset):
         out = torchaudio.transforms.MelSpectrogram(sr)(y)
         if self.transform:
             out = self.transform(y)
-        sample = {
-            "sample": out,
-            "sr": sr,
-            "label": torch.tensor(scene_label)
-        }
+        sample = {"sample": out, "sr": sr, "label": torch.tensor(scene_label)}
         return sample
 
     def __len__(self):
