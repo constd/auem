@@ -1,3 +1,3 @@
-![Github CI Build Status](https://github.com/constd/auem/workflows/Python%20application/badge.svg)
+![GitHub CI-CD](https://github.com/constd/auem/workflows/GitHub%20CI-CD/badge.svg)
 
 # AUEM - Audio Embedding
