@@ -1,10 +1,12 @@
+import logging
+from math import ceil
+
 import hydra
 from omegaconf import DictConfig
-from tqdm import tqdm
-from torch.utils.data import DataLoader
 from torch.cuda import is_available as is_cuda_available
-from math import ceil
-import logging
+from torch.utils.data import DataLoader
+
+from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
 

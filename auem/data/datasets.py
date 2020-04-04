@@ -1,11 +1,11 @@
-from typing import Union
 import pathlib
-import pandas as pd
+from typing import Union
 
+import pandas as pd
 import torch
 import torchaudio
-from torchvision.transforms import Compose
 from torch.utils.data import Dataset
+from torchvision.transforms import Compose
 
 
 class DCASE2020Task1a(Dataset):
