@@ -6,14 +6,15 @@ repos:
       language: python
       exclude: __init__.py
 
-- repo: https://github.com/ambv/black
-  rev: stable
+- repo: https://github.com/psf/black
+  rev: 19.10b0
   hooks:
   - id: black
     language_version: python3.7
+    entry: black
 
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v2.5.0
+  rev: v2.3.0
   hooks:
   - id: flake8
   - id: debug-statements
@@ -25,7 +26,7 @@ repos:
     args: [--autofix, --no-sort-keys, --indent=2]
 
 - repo: https://github.com/pycqa/pydocstyle
-  rev: 5.0.2
+  rev: 4.0.0
   hooks:
   - id: pydocstyle
 
