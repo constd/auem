@@ -1,23 +1,29 @@
-from typing import Union
 import pathlib
-import pandas as pd
+from typing import Union
 
+import pandas as pd
 import torch
 import torchaudio
-from torchvision.transforms import Compose
 from torch.utils.data import Dataset
+from torchvision.transforms import Compose
 
 
 class DCASE2020Task1a(Dataset):
-    def __init__(self, split_df_path: Union[str, pathlib.Path],
-                       metadata_df_path: pd.DataFrame,
-                       data_root: pathlib.Path,
-                       transform: Compose=None):
+    def __init__(
+        self,
+        split_df_path: Union[str, pathlib.Path],
+        metadata_df_path: pd.DataFrame,
+        data_root: pathlib.Path,
+        transform: Compose = None,
+    ):
         self.data = pd.read_csv(split_df_path, sep="\t", header=0)
         self.metadata = pd.read_csv(metadata_df_path)
         self.data_root = pathlib.Path(data_root)
         self.transform = transform
-        self.label_to_idx = {v: k for k, v in enumerate(sorted(self.data["scene_label"].unique().tolist()))}
+        self.label_to_idx = {
+            v: k
+            for k, v in enumerate(sorted(self.data["scene_label"].unique().tolist()))
+        }
 
     def __getitem__(self, idx):
         if torch.is_tensor(idx):

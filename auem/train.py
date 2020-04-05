@@ -9,6 +9,7 @@ from math import ceil
 import logging, os
 from torch.utils import tensorboard as tb
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -28,12 +29,14 @@ def train(cfg: DictConfig) -> None:
     # TODO: file a bug with hydra to allow non-promitive pass-through of non-primitives
     dl_train = hydra.utils.get_class(cfg.dataloader["class"])(ds_train, **cfg.dataloader.params)
     dl_valid = hydra.utils.get_class(cfg.dataloader["class"])(ds_valid, **cfg.dataloader.params)
-    
+
     model = hydra.utils.instantiate(cfg.model).to(device)
 
     # hydra doesn't work with non primitives like the model.parameters() generator in the following
     # TODO: file a bug with hydra to allow non-promitive pass-through of non-primitives
-    optimizer = hydra.utils.get_class(cfg.optim["class"])(model.parameters(), **cfg.optim.params)
+    optimizer = hydra.utils.get_class(cfg.optim["class"])(
+        model.parameters(), **cfg.optim.params
+    )
 
     criterion = hydra.utils.instantiate(cfg.criterion)
 
