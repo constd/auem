@@ -36,7 +36,13 @@ class DCASE2020Task1a(Dataset):
         out = torchaudio.transforms.MelSpectrogram(sr)(y)
         if self.transform:
             out = self.transform(y)
-        sample = {"sample": out, "sr": sr, "label": torch.tensor(scene_label)}
+        sample = {
+            "filename": [row["filename"]],
+            "raw": y,
+            "X": out,
+            "sr": sr,
+            "label": torch.tensor(scene_label)
+        }
         return sample
 
     def __len__(self):

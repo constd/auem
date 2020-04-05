@@ -17,6 +17,6 @@ hydra:
         filename: ${hydra.job.name}.log
     root:
       level: DEBUG
-      handlers: [console, file]
+      handlers: [file]
 
     disable_existing_loggers: False
