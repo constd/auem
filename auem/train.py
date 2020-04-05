@@ -6,7 +6,7 @@ import torch
 from torch.utils.data import DataLoader
 from torch.cuda import is_available as is_cuda_available
 from math import ceil
-import logging
+import logging, os
 from torch.utils import tensorboard as tb
 
 logger = logging.getLogger(__name__)
@@ -45,8 +45,7 @@ def train(cfg: DictConfig) -> None:
     for epoch in tqdm(range(cfg.epochs), position=0, desc="Epoch"):
         losses, items_seen = 0, 0
         model.train()
-        for batch_num, batch in tqdm(enumerate(dl_train), total=num_batches_train, position=1, desc="Batch"):
-            gs += 1
+        for _, batch in tqdm(enumerate(dl_train), total=num_batches_train, position=1, desc="Batch"):
             X, y = batch["sample"].to(device), batch["label"].to(device)
             optimizer.zero_grad()
             output = model(X)
@@ -61,7 +60,7 @@ def train(cfg: DictConfig) -> None:
         if cfg.eval:
             model.eval()
             embeddings, ys, losses = [], [], 0
-            for batch_num, batch in tqdm(enumerate(dl_valid), total=num_batches_valid, position=1, desc="Batch"):
+            for _, batch in tqdm(enumerate(dl_valid), total=num_batches_valid, position=1, desc="Batch"):
                 X, y = batch["sample"].to(device), batch["label"].to(device)
                 output = model.get_embedding(X)
                 loss = criterion(output, y)
