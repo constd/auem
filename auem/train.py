@@ -1,9 +1,4 @@
-import sys, os
-from dotenv import load_dotenv
-load_dotenv()
-
-sys.path.append(os.environ.get("path_to_auem"))
-
+import auem
 import hydra
 from omegaconf import DictConfig
 from tqdm import tqdm
