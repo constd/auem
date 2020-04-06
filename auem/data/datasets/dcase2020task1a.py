@@ -1,6 +1,7 @@
 import pathlib
-from typing import Union
 from copy import deepcopy
+from typing import Union
+
 import pandas as pd
 import torch
 import torchaudio
@@ -9,6 +10,7 @@ import torchvision
 
 class DCASE2020Task1aDataset(torch.utils.data.Dataset):
     SR = 44100
+
     def __init__(
         self,
         split_df_path: Union[str, pathlib.Path],
@@ -22,11 +24,13 @@ class DCASE2020Task1aDataset(torch.utils.data.Dataset):
         self.transforms = transforms
 
         # convenience convertor from class index to class label
-        self.c2l = {k: v for k, v in enumerate(sorted(self.data["scene_label"].unique().tolist()))}
+        self.c2l = {
+            k: v
+            for k, v in enumerate(sorted(self.data["scene_label"].unique().tolist()))
+        }
         self.l2c = {v: k for k, v in self.c2l.items()}
         self.classes = list(self.c2l.values)
         self.c = len(self.classes)
-        
 
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
