@@ -1,18 +1,14 @@
 import json
 import os
-import pickle
-import sys
 from copy import deepcopy
-from csv import DictReader, reader
+from csv import DictReader
 from glob import glob
 from pathlib import Path
 from typing import Union
 
 import librosa
 import torch
-import torchaudio
 import torchvision
-from tqdm import tqdm
 
 
 class AudiosetAnnotationReaderV1(DictReader):
@@ -137,11 +133,13 @@ class AudiosetDataset(torch.utils.data.Dataset):
             sample["start_seconds"],
             sample["end_seconds"] - sample["start_seconds"],
         )
-        audio, sr = librosa.load(sample["filepath"], offset=start, duration=duration, sr=self.SR, mono=True)
+        audio, sr = librosa.load(
+            sample["filepath"], offset=start, duration=duration, sr=self.SR, mono=True
+        )
 
         max_length = sr * 10
         temp = torch.zeros(max_length).unsqueeze(0)
-        temp[0, :min(audio.shape[0], max_length)] = torch.tensor(audio)
+        temp[0, : min(audio.shape[0], max_length)] = torch.tensor(audio)
 
         audio = temp
         data = deepcopy(audio)

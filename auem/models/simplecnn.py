@@ -22,7 +22,7 @@ class SimpleCNNBase(torch.nn.Module):
         self.conv4 = nn.Conv2d(32, 32, kernel_size=4, stride=(2, 2), bias=False)
         # (x, 16, (55 - 4 + 1) / 2=26, (273-4+1)/2 = 135 )
         self.bn4 = nn.BatchNorm2d(32)
-        
+
         self.linear1 = nn.Linear(input_size, 128)
         # self.linear1 = nn.Linear(32 * 26 * 135, 128)
         self.linear2 = nn.Linear(128, num_classes)
