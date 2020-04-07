@@ -1,0 +1,6 @@
+dataset:
+  class: auem.data.datasets.audioset.AudiosetDataset
+  params:
+    audioset_path: /home/const/audiodrive/audioset/raw/balanced_train/
+    ontology: /home/const/audiodrive/audioset/metadata/ontology.json 
+    audioset_annotations: /home/const/audiodrive/audioset/metadata/balanced_train_segments.csv

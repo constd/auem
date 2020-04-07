@@ -1,11 +1,11 @@
 defaults:
   - hydra/job_logging: debug
-  - datasets: dcase2020task1a
+  - datasets: audioset
   - dataloaders: standard
-  - models: simplenn
+  - transforms: melspec
+  - models: simplecnn
   - optims: adam
   - criterions: nll
-
 
 eval: True
 epochs: 2000
@@ -17,5 +17,5 @@ checkpoint:
     enabled: True
     frequency: 100
 cuda:
-  enabled: True
+  enable: True
   device: "cuda"

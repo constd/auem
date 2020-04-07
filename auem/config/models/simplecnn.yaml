@@ -2,4 +2,4 @@ model:
   class: auem.models.simplecnn.SimpleCNNBase
   params:
     input_size: 282368
-    num_classes: 10
+    num_classes: 632
