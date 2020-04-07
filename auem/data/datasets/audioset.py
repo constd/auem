@@ -137,14 +137,13 @@ class AudiosetDataset(torch.utils.data.Dataset):
             sample["start_seconds"],
             sample["end_seconds"] - sample["start_seconds"],
         )
-        audio, sr = librosa.load(sample["filepath"], offset=start, duration=duration)
+        audio, sr = librosa.load(sample["filepath"], offset=start, duration=duration, sr=self.SR, mono=True)
 
         max_length = sr * 10
         temp = torch.zeros(max_length).unsqueeze(0)
-        temp[0, : min(audio.shape[0], max_length)] = torch.tensor(audio)
+        temp[0, :min(audio.shape[0], max_length)] = torch.tensor(audio)
 
-        # resample here so that all subsequent transforms can assume a SR
-        audio = torchaudio.transforms.Resample(orig_freq=sr, new_freq=self.SR)(temp)
+        audio = temp
         data = deepcopy(audio)
         if self.transforms:
             data = self.transforms(data)
