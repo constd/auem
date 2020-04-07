@@ -29,7 +29,8 @@ class DCASE2020Task1aDataset(torch.utils.data.Dataset):
             for k, v in enumerate(sorted(self.data["scene_label"].unique().tolist()))
         }
         self.l2c = {v: k for k, v in self.c2l.items()}
-        self.classes = list(self.c2l.values)
+        self.classes = list(self.c2l.values())
+        print(self.classes)
         self.c = len(self.classes)
 
     def __getitem__(self, idx):
@@ -37,7 +38,7 @@ class DCASE2020Task1aDataset(torch.utils.data.Dataset):
             idx = idx.tolist()
         row = self.data.iloc[idx]
         example_fn = row["filename"]
-        scene_label = self.classes.index([row["scene_label"]])
+        scene_label = self.l2c[row["scene_label"]]
         # row_meta = self.metadata[self.metadata["filename"] == example_fn]
         audio, sr = torchaudio.load(self.data_root / example_fn, normalization=True)
 

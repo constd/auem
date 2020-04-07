@@ -5,7 +5,7 @@ defaults:
   - transforms: melspec
   - models: simplecnn
   - optims: adam
-  - criterions: nll
+  - criterions: bceloss
 
 eval: True
 epochs: 2000

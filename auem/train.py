@@ -77,7 +77,7 @@ def train(cfg: DictConfig) -> None:
             ):
                 X, y = batch["X"].to(device), batch["label"].to(device)
                 output = model.get_embedding(X)
-                loss = criterion(output, y)
+                loss = criterion(output, y.squeeze_())
                 if (
                     cfg.checkpoint.embeddings.enabled
                     and epoch % cfg.checkpoint.frequency == 0
