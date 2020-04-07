@@ -9,6 +9,8 @@ from torch.cuda import is_available as is_cuda_available
 from torch.utils import tensorboard as tb
 from tqdm import tqdm
 
+import auem.evaluation.confusion as confusion
+
 logger = logging.getLogger(__name__)
 
 
@@ -95,6 +97,8 @@ def train(cfg: DictConfig) -> None:
                 writer.add_embedding(
                     torch.tensor(embeddings), metadata=ys, global_step=epoch
                 )
+
+            # confusion.log_confusion_matrix(writer, y, output, class_names)
         if cfg.checkpoint.model.enabled and epoch % cfg.checkpoint.model.frequency == 0:
             model.save(f"{os.getcwd()}/{cfg.model.name}_{cfg.epochs}_final.pt")
     model.save(f"{os.getcwd()}/{cfg.model.name}_{cfg.epochs}_final.pt")
