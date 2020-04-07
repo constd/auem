@@ -12,7 +12,7 @@ def plot_confusion_matrix(
     *,  # prevent positional arguments
     y_true: np.ndarray = None,
     y_pred: np.ndarray = None,
-    cm : np.ndarray = None
+    cm : np.ndarray = None,
     class_names: Optional[str]=None,
     figsize=(8, 8)
 ):
