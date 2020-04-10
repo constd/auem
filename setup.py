@@ -1,3 +1,4 @@
+"""This setup.py is only intended for development."""
 import setuptools
 
 setuptools.setup(
@@ -7,6 +8,17 @@ setuptools.setup(
     author_email="const@embeddingspace.com",
     url="https://github.com/constd/auem",
     packages=setuptools.find_packages(),
+    install_requires=[
+        "hydra-core",
+        "torch",
+        "numpy",
+        "pandas",
+        "scikit-learn",
+        "torchvision",
+        "torchaudio",
+        "click",
+        "tqdm",
+    ],
     entry_points={"console_scripts": ["auem = auem.train:entry"]},
     classifiers=[
         "Programming Language :: Python :: 3",
