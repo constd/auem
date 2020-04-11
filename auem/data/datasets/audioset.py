@@ -2,16 +2,20 @@
 import csv
 import json
 import logging
+import time
+import warnings
 from copy import deepcopy
 from csv import DictReader
 from pathlib import Path
-from typing import List, Tuple, Union
+from typing import Dict, List, Tuple, Union
 
 import librosa
 import numpy as np
 import torch
 import torchaudio
 import torchvision
+
+from auem.data.caching import FeatureCache
 
 logger = logging.getLogger(__name__)
 
@@ -159,6 +163,32 @@ class AudiosetAnnotationReaderV2:
         yield self[self._idx]
         self._idx += 1
 
+    def clear_non_existing(
+        self, audioset_path: Path, datapath_map: Dict[str, Path]
+    ) -> "AudiosetAnnotationReaderV2":
+        """Remove annotations for files which do not exist.
+
+        Returns a new copy of the dataset.
+        """
+        if not self._annotations:
+            self._load_annotations()
+
+        copy = self.__class__(self.annotation_path, self.classes)
+        copy._annotations = [x for x in self._annotations if x[0] in datapath_map]
+
+        return copy
+
+
+def _load_audio(
+    audio_path: Path, start_seconds: float, end_seconds: float
+) -> Tuple[np.ndarray, float]:
+    duration = end_seconds - start_seconds
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+
+        return librosa.load(audio_path, offset=start_seconds, duration=duration)
+
 
 class AudiosetDataset(torch.utils.data.Dataset):
     """Torch-style dataset class for loading AudioSet."""
@@ -189,30 +219,52 @@ class AudiosetDataset(torch.utils.data.Dataset):
 
         self.annotations = AudiosetAnnotationReaderV2(
             audioset_annotations, classes=self.classes
-        )
-        self.audio_cache_dir = Path(audio_cache_dir) if audio_cache_dir else None
+        ).clear_non_existing(audioset_path, self.datapaths)
 
-    def _load_audio(
-        self, youtube_id: str, start_seconds: float, end_seconds: float
+        self.audio_cache_dir = Path(audio_cache_dir) if audio_cache_dir else None
+        self._init_cache()
+
+        self._init_duration_log()
+
+    def _init_cache(self):
+        self._cache = None
+        if self.audio_cache_dir is not None:
+            self._cache = FeatureCache(self.audio_cache_dir)
+
+    def _init_duration_log(self):
+        self._load_durations = []
+
+    def load_audio(
+        self, ytid: str, start_seconds: float, end_seconds: float
     ) -> Tuple[np.ndarray, float]:
         """Load the audio, optionally with caching."""
-        duration = end_seconds - start_seconds
+        t0 = time.time()
 
         try:
-            audio, sr = librosa.load(
-                self.datapaths[youtube_id], offset=start_seconds, duration=duration
+            audio_path = self.datapaths[ytid]
+        except KeyError:
+            logger.error(f"**** Missing key: {ytid} ***")
+            raise
+
+        if self._cache is not None:
+            audio, sr = self._cache.load(
+                _load_audio, audio_path, start_seconds, end_seconds
             )
 
-            return audio, sr
-        except KeyError:
-            print(f"**** Missing key: {youtube_id} ***")
-            raise
+        else:
+            audio, sr = _load_audio(audio_path, start_seconds, end_seconds)
+
+        self._load_durations.append(time.time() - t0)
+
+        return audio, sr
 
     def __getitem__(self, idx: int):
         """Get a sample from the dataset."""
         sample = self.annotations[idx]
 
-        audio, sr = self._load_audio(**sample)
+        audio, sr = self.load_audio(
+            sample["ytid"], sample["start_seconds"], sample["end_seconds"]
+        )
 
         max_length = sr * 10
         temp = torch.zeros(sr * 10).unsqueeze(0)
@@ -238,3 +290,19 @@ class AudiosetDataset(torch.utils.data.Dataset):
     def __len__(self):
         """Size of the dataset, in annotations."""
         return len(self.annotations)
+
+    def sampling_report(self):
+        """Generate a report as a string."""
+        last_5_durations = np.mean(self._load_durations[-5:])
+
+        cache_report = None
+        if self._cache:
+            cache_report = (
+                f"Cache [hits={self._cache._stats['cache_hit']}|"
+                f"misses={self._cache._stats['cache_miss']}]"
+            )
+        return (
+            f"Dataset time log (n=5): {last_5_durations} " + cache_report
+            if cache_report
+            else ""
+        )

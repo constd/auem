@@ -1,5 +1,4 @@
-"""Script to test and benchmark the Dataset sampling used in `train.py.`
-"""
+"""Script to test and benchmark the Dataset sampling used in `train.py`."""
 import logging
 import time
 from collections import defaultdict
@@ -18,7 +17,7 @@ def benchmark_sampling(cfg: DictConfig) -> None:
     ds_train = hydra.utils.get_class(cfg.dataset["class"])(
         audioset_annotations=cfg.dataset["folds"]["train"],
         transforms=transforms,
-        **cfg.dataset.params
+        **cfg.dataset.params,
     )
 
     dl_train = hydra.utils.get_class(cfg.dataloader["class"])(
@@ -27,7 +26,11 @@ def benchmark_sampling(cfg: DictConfig) -> None:
 
     time_log = defaultdict(list)
 
+    batch_shape = None
+    target_shape = None
+
     for epoch_idx in range(3):
+        print("Starting epoch:", epoch_idx)
         time_log["epoch_start"].append(time.time())
 
         i = 0
@@ -36,15 +39,27 @@ def benchmark_sampling(cfg: DictConfig) -> None:
         for i in range(batch_len):
             time_log["batch_start"].append(time.time())
             try:
-                next(batch_iter)
+                batch = next(batch_iter)
+
+                if batch_shape is None:
+                    batch_shape = batch["X"].shape
+                    target_shape = batch["label"].shape
+
+                elif batch_shape != batch["X"].shape:
+                    print(f"Shape mismatch! {batch_shape}, {batch['X'].shape}")
+
+                elif target_shape != batch["label"].shape:
+                    print(f"Target mismatch! {target_shape}, {batch['label'].shape}")
             except KeyError:
                 print("Batch failed, but continuing anyway")
             time_log["batch_end"].append(time.time())
 
+            print("Sampling:", ds_train.sampling_report())
             durations = np.array(time_log["batch_end"][-5:]) - np.array(
                 time_log["batch_start"][-5:]
             )
             print("Rolling Batch Load Avg (n=5):", durations.mean())
+
         time_log["epoch_end"].append(time.time())
         print()
         print(
@@ -55,6 +70,7 @@ def benchmark_sampling(cfg: DictConfig) -> None:
 
 @hydra.main(config_path="config/config.yaml")
 def main(cfg: DictConfig) -> None:
+    """Run the sampling benchmarks."""
     benchmark_sampling(cfg)
 
 
