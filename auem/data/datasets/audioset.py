@@ -1,12 +1,14 @@
+"""Dataset classes for Google's AudioSet dataset."""
 import csv
 import json
 import logging
 from copy import deepcopy
 from csv import DictReader
 from pathlib import Path
-from typing import List, Union
+from typing import List, Tuple, Union
 
 import librosa
+import numpy as np
 import torch
 import torchaudio
 import torchvision
@@ -15,6 +17,8 @@ logger = logging.getLogger(__name__)
 
 
 class AudiosetAnnotationReaderV1(DictReader):
+    """Annotation Reader which wraps csv's DictReader."""
+
     def __init__(
         self,
         f,
@@ -46,11 +50,13 @@ class AudiosetAnnotationReaderV1(DictReader):
 
     @staticmethod
     def __load_ontology(ontology):
+        """Return the ontology as a map."""
         if ontology is not None:
             return {x["id"]: x for x in ontology}
         return ontology
 
     def init_properties(self):
+        """Load the properties from the .csv file, which are contained in comments."""
         row = next(self.reader)
         self.annotation_creation_date = [x.strip("#").rstrip().lstrip() for x in row]
         row = next(self.reader)
@@ -65,6 +71,7 @@ class AudiosetAnnotationReaderV1(DictReader):
         self.line_num = self.reader.line_num
 
     def __next__(self):
+        """Process one row of the csv at a time."""
         row = next(self.reader)
         self.line_num = self.reader.line_num
 
@@ -90,6 +97,20 @@ class AudiosetAnnotationReaderV1(DictReader):
 
 
 class AudiosetAnnotationReaderV2:
+    """Process the annotation file using the csv reader.
+
+    Loads the entire file at one time, instead of processing line-by-line.
+
+    Parameters
+    ----------
+    annotation_path
+        Path to an Audioset annotations file, which is a csv with four columns:
+        - youtube ID
+        - Start offset (s)
+        - End offset (s)
+        - List of classes
+    """
+
     def __init__(self, annotation_path: Union[Path, str], classes: List):
         self.annotation_path = annotation_path
         self.classes = classes
@@ -98,6 +119,7 @@ class AudiosetAnnotationReaderV2:
         self._idx = None
 
     def _load_annotations(self):
+        """Load the entire annotations file, skipping any "comment" lines."""
         self._annotations = []
         with open(self.annotation_path, "r") as fh:
             for l in csv.reader(
@@ -107,12 +129,14 @@ class AudiosetAnnotationReaderV2:
                     self._annotations.append(l)
 
     def __len__(self):
+        """Return how many annotations were provided in this file."""
         if not self._annotations:
             self._load_annotations()
 
         return len(self._annotations)
 
     def __getitem__(self, idx):
+        """Return a single line from the file, by index."""
         if not self._annotations:
             self._load_annotations()
 
@@ -126,6 +150,7 @@ class AudiosetAnnotationReaderV2:
         }
 
     def __next__(self):
+        """Iterate over the annotations, one by one."""
         if not self._annotations:
             self._load_annotations()
         if self._idx is None:
@@ -136,6 +161,8 @@ class AudiosetAnnotationReaderV2:
 
 
 class AudiosetDataset(torch.utils.data.Dataset):
+    """Torch-style dataset class for loading AudioSet."""
+
     SR = 44100
 
     def __init__(
@@ -144,6 +171,7 @@ class AudiosetDataset(torch.utils.data.Dataset):
         ontology: Union[str, Path],
         audioset_annotations: Union[str, Path],
         transforms: Union[torch.nn.Module, torchvision.transforms.Compose] = None,
+        audio_cache_dir: Union[str, Path] = None,
     ):
         self.transforms = transforms
         with open(ontology, "r") as f:
@@ -162,35 +190,29 @@ class AudiosetDataset(torch.utils.data.Dataset):
         self.annotations = AudiosetAnnotationReaderV2(
             audioset_annotations, classes=self.classes
         )
-        # for row in AudiosetAnnotationReaderV1(f, ontology=self.ontology):
-        #     if row["YTID"] in datapaths.keys():
-        #         self.annotations.append(
-        #             {
-        #                 "ytid": row["YTID"],
-        #                 "start_seconds": row["start_seconds"],
-        #                 "end_seconds": row["end_seconds"],
-        #                 "classes": [
-        #                     self.classes.index(k)
-        #                     for k in row["positive_labels"].keys()
-        #                 ],
-        #                 "filepath": datapaths[row["YTID"]],
-        #             }
-        #         )
+        self.audio_cache_dir = Path(audio_cache_dir) if audio_cache_dir else None
 
-    def __getitem__(self, idx: int):
-        sample = self.annotations[idx]
-        start, duration = (
-            sample["start_seconds"],
-            sample["end_seconds"] - sample["start_seconds"],
-        )
+    def _load_audio(
+        self, youtube_id: str, start_seconds: float, end_seconds: float
+    ) -> Tuple[np.ndarray, float]:
+        """Load the audio, optionally with caching."""
+        duration = end_seconds - start_seconds
 
         try:
             audio, sr = librosa.load(
-                self.datapaths[sample["ytid"]], offset=start, duration=duration
+                self.datapaths[youtube_id], offset=start_seconds, duration=duration
             )
+
+            return audio, sr
         except KeyError:
-            print(f"**** Missing key: {sample['ytid']} ***")
+            print(f"**** Missing key: {youtube_id} ***")
             raise
+
+    def __getitem__(self, idx: int):
+        """Get a sample from the dataset."""
+        sample = self.annotations[idx]
+
+        audio, sr = self._load_audio(**sample)
 
         max_length = sr * 10
         temp = torch.zeros(sr * 10).unsqueeze(0)
@@ -214,4 +236,5 @@ class AudiosetDataset(torch.utils.data.Dataset):
         }
 
     def __len__(self):
+        """Size of the dataset, in annotations."""
         return len(self.annotations)
