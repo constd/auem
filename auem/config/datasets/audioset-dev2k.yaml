@@ -1,9 +1,8 @@
 dataset:
   class: auem.data.datasets.audioset.AudiosetDataset
   folds:
-    train: /home/const/Projects/data/audioset/datasplits/balanced_train_segments-train-full.csv
-    val: /home/const/Projects/data/audioset/datasplits/balanced_train_segments-val-full.csv
+    train: /home/const/Projects/data/audioset/datasplits/balanced_train_segments-train-dev-2k.csv
+    val: /home/const/Projects/data/audioset/datasplits/balanced_train_segments-val-dev-2k.csv
   params:
     audioset_path: /home/const/Projects/data/audioset/yt_audio/balanced_train/
     ontology: /home/const/Projects/data/audioset/ontology/ontology.json 
-

@@ -1,6 +1,6 @@
 defaults:
   - hydra/job_logging: debug
-  - datasets: audioset
+  - datasets: audioset-dev2k
   - dataloaders: standard
   - transforms: melspec
   - models: simplecnn
