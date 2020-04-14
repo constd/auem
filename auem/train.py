@@ -104,8 +104,8 @@ def train(cfg: DictConfig) -> None:
 
             # confusion.log_confusion_matrix(writer, y, output, class_names)
         if cfg.checkpoint.model.enabled and epoch % cfg.checkpoint.model.frequency == 0:
-            model.save(f"{os.getcwd()}/{cfg.model.name}_{cfg.epochs}_final.pt")
-    model.save(f"{os.getcwd()}/{cfg.model.name}_{cfg.epochs}_final.pt")
+            torch.save(model, f"{os.getcwd()}/{cfg.model.name}_{cfg.epochs}_final.pt")
+    torch.save(model, f"{os.getcwd()}/{cfg.model.name}_{cfg.epochs}_final.pt")
 
 
 @hydra.main(config_path="config/config.yaml")
