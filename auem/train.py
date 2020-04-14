@@ -9,6 +9,8 @@ from torch.cuda import is_available as is_cuda_available
 from torch.utils import tensorboard as tb
 from tqdm import tqdm
 
+# import auem.evaluation.confusion as confusion
+
 logger = logging.getLogger(__name__)
 
 
@@ -16,15 +18,16 @@ def train(cfg: DictConfig) -> None:
     device = cfg.cuda.device if cfg.cuda.enable and is_cuda_available() else "cpu"
 
     transforms = hydra.utils.instantiate(cfg.transform)
-    dataset = hydra.utils.get_class(cfg.dataset["class"])(
-        transforms=transforms, **cfg.dataset.params
-    )
 
-    # TODO: there's got to be a better way to do this!
-    train_size = int(0.8 * len(dataset))
-    valid_size = len(dataset) - train_size
-    ds_train, ds_valid = torch.utils.data.random_split(
-        dataset, [train_size, valid_size]
+    ds_train = hydra.utils.get_class(cfg.dataset["class"])(
+        audioset_annotations=cfg.dataset["folds"]["train"],
+        transforms=transforms,
+        **cfg.dataset.params,
+    )
+    ds_valid = hydra.utils.get_class(cfg.dataset["class"])(
+        audioset_annotations=cfg.dataset["folds"]["val"],
+        transforms=transforms,
+        **cfg.dataset.params,
     )
 
     dl_train = hydra.utils.get_class(cfg.dataloader["class"])(
@@ -98,6 +101,8 @@ def train(cfg: DictConfig) -> None:
                 writer.add_embedding(
                     torch.tensor(embeddings), metadata=ys, global_step=epoch
                 )
+
+            # confusion.log_confusion_matrix(writer, y, output, class_names)
         if cfg.checkpoint.model.enabled and epoch % cfg.checkpoint.model.frequency == 0:
             model.save(f"{os.getcwd()}/{cfg.model.name}_{cfg.epochs}_final.pt")
     model.save(f"{os.getcwd()}/{cfg.model.name}_{cfg.epochs}_final.pt")

@@ -1,17 +1,27 @@
+"""Dataset classes for Google's AudioSet dataset."""
+import csv
 import json
-import os
+import logging
+import time
+import warnings
 from copy import deepcopy
 from csv import DictReader
-from glob import glob
 from pathlib import Path
-from typing import Union
+from typing import Dict, List, Tuple, Union
 
 import librosa
+import numpy as np
 import torch
 import torchvision
 
+from auem.data.caching import FeatureCache
+
+logger = logging.getLogger(__name__)
+
 
 class AudiosetAnnotationReaderV1(DictReader):
+    """Annotation Reader which wraps csv's DictReader."""
+
     def __init__(
         self,
         f,
@@ -22,7 +32,7 @@ class AudiosetAnnotationReaderV1(DictReader):
         restval=None,
         dialect="excel",
         *args,
-        **kwds
+        **kwds,
     ):
         self.ontology = self.__load_ontology(ontology)
         self.annotation_stats = None
@@ -37,17 +47,19 @@ class AudiosetAnnotationReaderV1(DictReader):
             restval=restval,
             dialect=dialect,
             *args,
-            **kwds
+            **kwds,
         )
         self.init_properties()
 
     @staticmethod
     def __load_ontology(ontology):
+        """Return the ontology as a map."""
         if ontology is not None:
             return {x["id"]: x for x in ontology}
         return ontology
 
     def init_properties(self):
+        """Load the properties from the .csv file, which are contained in comments."""
         row = next(self.reader)
         self.annotation_creation_date = [x.strip("#").rstrip().lstrip() for x in row]
         row = next(self.reader)
@@ -62,6 +74,7 @@ class AudiosetAnnotationReaderV1(DictReader):
         self.line_num = self.reader.line_num
 
     def __next__(self):
+        """Process one row of the csv at a time."""
         row = next(self.reader)
         self.line_num = self.reader.line_num
 
@@ -86,7 +99,99 @@ class AudiosetAnnotationReaderV1(DictReader):
         return d
 
 
+class AudiosetAnnotationReaderV2:
+    """Process the annotation file using the csv reader.
+
+    Loads the entire file at one time, instead of processing line-by-line.
+
+    Parameters
+    ----------
+    annotation_path
+        Path to an Audioset annotations file, which is a csv with four columns:
+        - youtube ID
+        - Start offset (s)
+        - End offset (s)
+        - List of classes
+    """
+
+    def __init__(self, annotation_path: Union[Path, str], classes: List):
+        self.annotation_path = annotation_path
+        self.classes = classes
+
+        self._annotations = None
+        self._idx = None
+
+    def _load_annotations(self):
+        """Load the entire annotations file, skipping any "comment" lines."""
+        self._annotations = []
+        with open(self.annotation_path, "r") as fh:
+            for l in csv.reader(
+                fh, quotechar='"', delimiter=",", skipinitialspace=True
+            ):
+                if not l[0].startswith("#"):
+                    self._annotations.append(l)
+
+    def __len__(self):
+        """Return how many annotations were provided in this file."""
+        if not self._annotations:
+            self._load_annotations()
+
+        return len(self._annotations)
+
+    def __getitem__(self, idx):
+        """Return a single line from the file, by index."""
+        if not self._annotations:
+            self._load_annotations()
+
+        item = self._annotations[idx]
+
+        return {
+            "ytid": item[0],
+            "start_seconds": float(item[1].strip()),
+            "end_seconds": float(item[2].strip()),
+            "classes": [self.classes.index(k) for k in item[3].split(",")],
+        }
+
+    def __next__(self):
+        """Iterate over the annotations, one by one."""
+        if not self._annotations:
+            self._load_annotations()
+        if self._idx is None:
+            self._idx = 0
+
+        yield self[self._idx]
+        self._idx += 1
+
+    def clear_non_existing(
+        self, audioset_path: Path, datapath_map: Dict[str, Path]
+    ) -> "AudiosetAnnotationReaderV2":
+        """Remove annotations for files which do not exist.
+
+        Returns a new copy of the dataset.
+        """
+        if not self._annotations:
+            self._load_annotations()
+
+        copy = self.__class__(self.annotation_path, self.classes)
+        copy._annotations = [x for x in self._annotations if x[0] in datapath_map]
+
+        return copy
+
+
+def _load_audio(
+    audio_path: Path, start_seconds: float, end_seconds: float
+) -> Tuple[np.ndarray, float]:
+    duration = end_seconds - start_seconds
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+
+        return librosa.load(audio_path, offset=start_seconds, duration=duration)
+
+
 class AudiosetDataset(torch.utils.data.Dataset):
+    """Torch-style dataset class for loading AudioSet."""
+
     SR = 44100
 
     def __init__(
@@ -95,6 +200,7 @@ class AudiosetDataset(torch.utils.data.Dataset):
         ontology: Union[str, Path],
         audioset_annotations: Union[str, Path],
         transforms: Union[torch.nn.Module, torchvision.transforms.Compose] = None,
+        audio_cache_dir: Union[str, Path] = None,
     ):
         self.transforms = transforms
         with open(ontology, "r") as f:
@@ -107,34 +213,56 @@ class AudiosetDataset(torch.utils.data.Dataset):
         }
         self.l2c = {v: k for k, v in self.c2l.items()}
 
-        datapaths = glob(audioset_path + "*[m4a|webm]")
-        datapaths = {os.path.splitext(os.path.basename(x))[0]: x for x in datapaths}
+        audioset_path = Path(audioset_path)
+        self.datapaths = {x.stem: x for x in audioset_path.glob("*[m4a|webm]")}
 
-        self.annotations = []
-        with open(audioset_annotations, "r") as f:
-            for row in AudiosetAnnotationReaderV1(f, ontology=self.ontology):
-                if row["YTID"] in datapaths.keys():
-                    self.annotations.append(
-                        {
-                            "ytid": row["YTID"],
-                            "start_seconds": row["start_seconds"],
-                            "end_seconds": row["end_seconds"],
-                            "classes": [
-                                self.classes.index(k)
-                                for k in row["positive_labels"].keys()
-                            ],
-                            "filepath": datapaths[row["YTID"]],
-                        }
-                    )
+        self.annotations = AudiosetAnnotationReaderV2(
+            audioset_annotations, classes=self.classes
+        ).clear_non_existing(audioset_path, self.datapaths)
+
+        self.audio_cache_dir = Path(audio_cache_dir) if audio_cache_dir else None
+        self._init_cache()
+
+        self._init_duration_log()
+
+    def _init_cache(self):
+        self._cache = None
+        if self.audio_cache_dir is not None:
+            self._cache = FeatureCache(self.audio_cache_dir)
+
+    def _init_duration_log(self):
+        self._load_durations = []
+
+    def load_audio(
+        self, ytid: str, start_seconds: float, end_seconds: float
+    ) -> Tuple[np.ndarray, float]:
+        """Load the audio, optionally with caching."""
+        t0 = time.time()
+
+        try:
+            audio_path = self.datapaths[ytid]
+        except KeyError:
+            logger.error(f"**** Missing key: {ytid} ***")
+            raise
+
+        if self._cache is not None:
+            audio, sr = self._cache.load(
+                _load_audio, audio_path, start_seconds, end_seconds
+            )
+
+        else:
+            audio, sr = _load_audio(audio_path, start_seconds, end_seconds)
+
+        self._load_durations.append(time.time() - t0)
+
+        return audio, sr
 
     def __getitem__(self, idx: int):
+        """Get a sample from the dataset."""
         sample = self.annotations[idx]
-        start, duration = (
-            sample["start_seconds"],
-            sample["end_seconds"] - sample["start_seconds"],
-        )
-        audio, sr = librosa.load(
-            sample["filepath"], offset=start, duration=duration, sr=self.SR, mono=True
+
+        audio, sr = self.load_audio(
+            sample["ytid"], sample["start_seconds"], sample["end_seconds"]
         )
 
         max_length = sr * 10
@@ -158,4 +286,21 @@ class AudiosetDataset(torch.utils.data.Dataset):
         }
 
     def __len__(self):
+        """Size of the dataset, in annotations."""
         return len(self.annotations)
+
+    def sampling_report(self):
+        """Generate a report as a string."""
+        last_5_durations = np.mean(self._load_durations[-5:])
+
+        cache_report = None
+        if self._cache:
+            cache_report = (
+                f"Cache [hits={self._cache._stats['cache_hit']}|"
+                f"misses={self._cache._stats['cache_miss']}]"
+            )
+        return (
+            f"Dataset time log (n=5): {last_5_durations} " + cache_report
+            if cache_report
+            else ""
+        )
