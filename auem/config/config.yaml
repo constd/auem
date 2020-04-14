@@ -1,11 +1,12 @@
 defaults:
-  - hydra/job_logging: debug
+  - hydra/job_logging: info
   - datasets: audioset
   - dataloaders: standard
   - transforms: melspec
   - models: simplecnn
   - optims: adam
   - criterions: bceloss
+  - schedulers: cyclelr
 
 eval: True
 epochs: 2000

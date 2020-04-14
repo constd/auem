@@ -27,8 +27,6 @@ def train(cfg: DictConfig) -> None:
         dataset, [train_size, valid_size]
     )
 
-    # hydra doesn't work with non primitives like the dataset class
-    # TODO: file a bug with hydra to allow non-promitive pass-through of non-primitives
     dl_train = hydra.utils.get_class(cfg.dataloader["class"])(
         ds_train, **cfg.dataloader.params
     )
@@ -38,11 +36,11 @@ def train(cfg: DictConfig) -> None:
 
     model = hydra.utils.instantiate(cfg.model).to(device)
 
-    # hydra doesn't work with non primitives
-    # like the model.parameters() generator in the following
-    # TODO: file a bug with hydra to allow non-promitive pass-through of non-primitives
     optimizer = hydra.utils.get_class(cfg.optim["class"])(
         model.parameters(), **cfg.optim.params
+    )
+    scheduler = hydra.utils.get_class(cfg.scheduler["class"])(
+        optimizer, **cfg.scheduler.params
     )
 
     criterion = hydra.utils.instantiate(cfg.criterion)
@@ -53,9 +51,9 @@ def train(cfg: DictConfig) -> None:
     writer = tb.SummaryWriter()
     writer.add_graph(model, iter(dl_train).next()["X"].to(device))
     for epoch in tqdm(range(cfg.epochs), position=0, desc="Epoch"):
-        losses, items_seen = 0, 0
+        losses = 0
         model.train()
-        for _, batch in tqdm(
+        for batch_num, batch in tqdm(
             enumerate(dl_train), total=num_batches_train, position=1, desc="Batch"
         ):
             X, y = batch["X"].to(device), batch["label"].to(device)
@@ -63,10 +61,15 @@ def train(cfg: DictConfig) -> None:
             output = model(X)
             loss = criterion(output, y)
             losses += loss.item()
-            items_seen += X.shape[0]
             loss.backward()
             optimizer.step()
-        writer.add_scalar(f"loss/training", losses / batch.shape[0], global_step=epoch)
+            scheduler.step()
+            writer.add_scalar(
+                f"loss/training/batch",
+                loss.item(),
+                global_step=batch_num,
+            )
+        writer.add_scalar(f"loss/epoch/training", losses / batch_num, global_step=epoch)
         # writer.add_scalars(f"accuracy/training", accuracies, global_step=epoch)
         # evaluation loop
         if cfg.eval:
@@ -85,7 +88,7 @@ def train(cfg: DictConfig) -> None:
                     embeddings.extend(output.to("cpu").tolist())
                     ys.extend([ds_valid.c2l[x] for x in y.tolist()])
             writer.add_scalar(
-                f"loss/validation", losses / len(batch), global_step=epoch
+                f"loss/epoch/validation", losses / len(batch), global_step=epoch
             )
             # writer.add_scalars(f"accuracy/validation", accuracies, global_step=epoch)
             if (
@@ -102,7 +105,10 @@ def train(cfg: DictConfig) -> None:
 
 @hydra.main(config_path="config/config.yaml")
 def main(cfg: DictConfig) -> None:
-    # print(cfg.pretty())
+    import git
+    repo = git.Repo(search_parent_directories=True)
+    sha = repo.head.object.hexsha
+    logger.info(f"""Git hash: {str(sha)}""")
     train(cfg)
 
 
