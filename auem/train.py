@@ -1,12 +1,14 @@
 import logging
 import os
 from math import ceil
+from typing import Tuple
 
 import hydra
 import torch
 from omegaconf import DictConfig
 from torch.cuda import is_available as is_cuda_available
 from torch.utils import tensorboard as tb
+from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
 
 # import auem.evaluation.confusion as confusion
@@ -14,11 +16,8 @@ from tqdm import tqdm
 logger = logging.getLogger(__name__)
 
 
-def train(cfg: DictConfig) -> None:
-    device = cfg.cuda.device if cfg.cuda.enable and is_cuda_available() else "cpu"
-
+def datasets(cfg: DictConfig) -> Tuple[Dataset]:
     transforms = hydra.utils.instantiate(cfg.transform)
-
     ds_train = hydra.utils.get_class(cfg.dataset["class"])(
         audioset_annotations=cfg.dataset["folds"]["train"],
         transforms=transforms,
@@ -29,13 +28,24 @@ def train(cfg: DictConfig) -> None:
         transforms=transforms,
         **cfg.dataset.params,
     )
+    return (ds_train, ds_valid)
 
+
+def dataloaders(cfg: DictConfig, ds_train: Dataset, ds_valid: Dataset) -> Tuple[DataLoader]:
     dl_train = hydra.utils.get_class(cfg.dataloader["class"])(
         ds_train, **cfg.dataloader.params
     )
     dl_valid = hydra.utils.get_class(cfg.dataloader["class"])(
         ds_valid, **cfg.dataloader.params
     )
+    return (dl_train, dl_valid)
+
+
+def train(cfg: DictConfig) -> None:
+    device = cfg.cuda.device if cfg.cuda.enable and is_cuda_available() else "cpu"
+
+    ds_train, ds_valid = datasets(cfg)
+    dl_train, dl_valid = dataloaders(cfg, ds_train, ds_valid)
 
     model = hydra.utils.instantiate(cfg.model).to(device)
 
@@ -45,7 +55,6 @@ def train(cfg: DictConfig) -> None:
     scheduler = hydra.utils.get_class(cfg.scheduler["class"])(
         optimizer, **cfg.scheduler.params
     )
-
     criterion = hydra.utils.instantiate(cfg.criterion)
 
     num_batches_train = ceil(len(ds_train) / cfg.dataloader.params.batch_size)
