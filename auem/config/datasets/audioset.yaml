@@ -1,5 +1,5 @@
 dataset:
-  class: auem.data.datasets.audioset.AudiosetDataset
+  class: auem.data.datasets.AudiosetDataset
   folds:
     train: /home/const/Projects/data/audioset/datasplits/balanced_train_segments-train-full.csv
     val: /home/const/Projects/data/audioset/datasplits/balanced_train_segments-val-full.csv

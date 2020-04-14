@@ -2,6 +2,8 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
+__all__ = ["SimpleCNNBase"]
+
 
 class SimpleCNNBase(torch.nn.Module):
     def __init__(self, input_size, num_classes=10):

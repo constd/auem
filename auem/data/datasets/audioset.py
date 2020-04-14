@@ -18,6 +18,8 @@ from auem.data.caching import FeatureCache
 
 logger = logging.getLogger(__name__)
 
+__all__ = ["AudiosetAnnotationReaderV2", "AudiosetDataset"]
+
 
 class AudiosetAnnotationReaderV1(DictReader):
     """Annotation Reader which wraps csv's DictReader."""
