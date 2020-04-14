@@ -9,7 +9,7 @@ from torch.cuda import is_available as is_cuda_available
 from torch.utils import tensorboard as tb
 from tqdm import tqdm
 
-import auem.evaluation.confusion as confusion
+# import auem.evaluation.confusion as confusion
 
 logger = logging.getLogger(__name__)
 
@@ -18,15 +18,16 @@ def train(cfg: DictConfig) -> None:
     device = cfg.cuda.device if cfg.cuda.enable and is_cuda_available() else "cpu"
 
     transforms = hydra.utils.instantiate(cfg.transform)
-    dataset = hydra.utils.get_class(cfg.dataset["class"])(
-        transforms=transforms, **cfg.dataset.params
-    )
 
-    # TODO: there's got to be a better way to do this!
-    train_size = int(0.8 * len(dataset))
-    valid_size = len(dataset) - train_size
-    ds_train, ds_valid = torch.utils.data.random_split(
-        dataset, [train_size, valid_size]
+    ds_train = hydra.utils.get_class(cfg.dataset["class"])(
+        audioset_annotations=cfg.dataset["folds"]["train"],
+        transforms=transforms,
+        **cfg.dataset.params,
+    )
+    ds_valid = hydra.utils.get_class(cfg.dataset["class"])(
+        audioset_annotations=cfg.dataset["folds"]["val"],
+        transforms=transforms,
+        **cfg.dataset.params,
     )
 
     # hydra doesn't work with non primitives like the dataset class
