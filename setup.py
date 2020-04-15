@@ -1,4 +1,4 @@
-"""This setup.py is only intended for development."""
+"""Only intended for development."""
 import setuptools
 
 setuptools.setup(
@@ -18,6 +18,7 @@ setuptools.setup(
         "torchaudio",
         "click",
         "tqdm",
+        "pescador",
     ],
     entry_points={"console_scripts": ["auem = auem.train:entry"]},
     classifiers=[

@@ -34,9 +34,8 @@ def benchmark_sampling(cfg: DictConfig) -> None:
         time_log["epoch_start"].append(time.time())
 
         i = 0
-        batch_len = len(dl_train)
         batch_iter = iter(dl_train)
-        for i in range(batch_len):
+        while i < 1000:
             time_log["batch_start"].append(time.time())
             try:
                 batch = next(batch_iter)

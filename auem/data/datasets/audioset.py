@@ -2,15 +2,17 @@
 import csv
 import json
 import logging
+import math
 import time
 import warnings
 from copy import deepcopy
 from csv import DictReader
 from pathlib import Path
-from typing import Dict, List, Tuple, Union
+from typing import Dict, Iterable, List, Optional, Tuple, Union
 
 import librosa
 import numpy as np
+import pescador
 import torch
 import torchaudio
 import torchvision
@@ -306,3 +308,102 @@ class AudiosetDataset(torch.utils.data.Dataset):
             if cache_report
             else ""
         )
+
+
+@pescador.streamable
+def _gen_frames(
+    audioset_dataset: AudiosetDataset,
+    annotation_idx: int,
+    n_frames: int,
+    n_target_frames: int,
+) -> Iterable[dict]:
+    """Given an annotation index, load the audio file and generate frames from it."""
+    sample_data = audioset_dataset[annotation_idx]
+    # sample['X'] is the mel spectrum
+    _, n_features, n_available_frames = sample_data["X"].shape
+
+    # number of frames available
+    frame_index = np.arange(n_available_frames - (n_frames + n_target_frames))
+
+    while True:
+        np.random.shuffle(frame_index)
+
+        for i in frame_index:
+            sample_frames = sample_data.copy()
+            del sample_frames["raw"]
+            sample_frames["X"] = sample_data["X"][:, :, i : i + n_frames]
+            sample_frames["Y"] = sample_data["X"][
+                :, :, i + n_frames : i + n_frames + n_target_frames
+            ]
+            yield sample_frames
+
+
+class IterableAudiosetDataset(torch.utils.data.IterableDataset):
+    """Iterable-style Torch dataset for sampling from AudioSet data."""
+
+    STREAMER_DEFAULTS = {"n_frames": 5, "n_target_frames": 1}
+
+    def __init__(
+        self,
+        audioset_path: Union[str, Path],
+        ontology: Union[str, Path],
+        audioset_annotations: Union[str, Path],
+        streamer_settings: Optional[dict] = None,
+        **audioset_kwargs,
+    ):
+        self.audioset_dataset = AudiosetDataset(
+            audioset_path, ontology, audioset_annotations, **audioset_kwargs
+        )
+
+        self.streamer_settings = streamer_settings
+
+        self.start = 0
+        self.end = len(self.audioset_dataset)
+
+    def _build_streamer(self, start_index: int, end_index: int) -> pescador.Streamer:
+        """Create a pescador streamer for the provided indecies into the dataset."""
+        audiofile_streamers = [
+            _gen_frames(
+                self.audioset_dataset,
+                index,
+                self.streamer_settings["n_frames"],
+                self.streamer_settings["n_target_frames"],
+            )
+            for index in range(start_index, end_index)
+        ]
+
+        audiofile_mux = pescador.StochasticMux(
+            audiofile_streamers,
+            # todo: eventually, this should probably be a function of
+            #   <batch size> & <# workers>
+            # should probably be (batch_size / num_workers)
+            n_active=6,
+            # on average how many samples are generated from a stream before it dies
+            rate=5,
+        )
+
+        return audiofile_mux
+
+    def __iter__(self):
+        """Iterate over the dataset, or the fraction provided to this worker."""
+        # Worker handling taken from https://pytorch.org/docs/stable/data.html#torch.utils.data.IterableDataset # noqa E501
+        worker_info = torch.utils.data.get_worker_info()
+        if worker_info is None:  # single-process: return the full iterator.
+            iter_start = self.start
+            iter_end = self.end
+
+        else:  # in a worker process.
+            # split workload
+            per_worker = int(
+                math.ceil((self.end - self.start) / float(worker_info.num_workers))
+            )
+            worker_id = worker_info.id
+
+            iter_start = self.start + worker_id * per_worker
+            iter_end = min(iter_start + per_worker, self.end)
+
+        return self._build_streamer(iter_start, iter_end).cycle()
+
+    def sampling_report(self):
+        """Placeholder, #TODO."""
+        return ""

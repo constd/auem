@@ -19,6 +19,7 @@ click = "^7.1.1"
 tqdm = "^4.45.0"
 soundfile = "^0.10.3"
 librosa = "^0.7.2"
+pescador = "^2.1.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.4.1"
@@ -30,6 +31,7 @@ force_grid_wrap = 0
 use_parentheses = true
 line_length = 88
 known_third_party = [
+    "click",
     "hydra-core",
     "torch",
     "numpy",
