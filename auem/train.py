@@ -8,7 +8,7 @@ import torch
 from omegaconf import DictConfig
 from torch.cuda import is_available as is_cuda_available
 from torch.utils import tensorboard as tb
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
 # import auem.evaluation.confusion as confusion
@@ -31,7 +31,9 @@ def datasets(cfg: DictConfig) -> Tuple[Dataset]:
     return (ds_train, ds_valid)
 
 
-def dataloaders(cfg: DictConfig, ds_train: Dataset, ds_valid: Dataset) -> Tuple[DataLoader]:
+def dataloaders(
+    cfg: DictConfig, ds_train: Dataset, ds_valid: Dataset
+) -> Tuple[DataLoader]:
     dl_train = hydra.utils.get_class(cfg.dataloader["class"])(
         ds_train, **cfg.dataloader.params
     )
@@ -77,9 +79,7 @@ def train(cfg: DictConfig) -> None:
             optimizer.step()
             scheduler.step()
             writer.add_scalar(
-                f"loss/training/batch",
-                loss.item(),
-                global_step=batch_num,
+                f"loss/training/batch", loss.item(), global_step=batch_num,
             )
         writer.add_scalar(f"loss/epoch/training", losses / batch_num, global_step=epoch)
         # writer.add_scalars(f"accuracy/training", accuracies, global_step=epoch)
@@ -120,6 +120,7 @@ def train(cfg: DictConfig) -> None:
 @hydra.main(config_path="config/config.yaml")
 def main(cfg: DictConfig) -> None:
     import git
+
     repo = git.Repo(search_parent_directories=True)
     sha = repo.head.object.hexsha
     logger.info(f"""Git hash: {str(sha)}""")

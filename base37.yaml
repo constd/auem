@@ -30,3 +30,5 @@ dependencies:
   - xz=5.2.4
   - yaml=0.2
   - zlib=1.2
+  - gitpython=3.1.0
+  

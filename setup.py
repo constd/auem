@@ -18,6 +18,7 @@ setuptools.setup(
         "torchaudio",
         "click",
         "tqdm",
+        "gitpython",
     ],
     entry_points={"console_scripts": ["auem = auem.train:entry"]},
     classifiers=[

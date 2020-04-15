@@ -9,6 +9,7 @@ import torchvision
 
 __all__ = ["DCASE2020Task1aDataset"]
 
+
 class DCASE2020Task1aDataset(torch.utils.data.Dataset):
     SR = 44100
 

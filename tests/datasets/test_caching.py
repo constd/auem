@@ -1,9 +1,9 @@
 import librosa
 import numpy as np
-import pytest
 import soundfile as sf
 
 import auem.data.caching
+import pytest
 
 
 @pytest.mark.xfail(reason="TODO")

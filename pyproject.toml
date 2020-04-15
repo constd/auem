@@ -19,6 +19,7 @@ click = "^7.1.1"
 tqdm = "^4.45.0"
 soundfile = "^0.10.3"
 librosa = "^0.7.2"
+gitpython = "^3.1.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.4.1"
