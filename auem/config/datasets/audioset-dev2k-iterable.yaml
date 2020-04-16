@@ -8,5 +8,5 @@ dataset:
     ontology: /home/const/Projects/data/audioset/ontology/ontology.json 
     audio_cache_dir: /home/const/Projects/data/audioset/feature_cache/
     streamer_settings:
-      n_frames: 5
+      n_frames: 10
       n_target_frames: 1

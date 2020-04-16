@@ -38,7 +38,7 @@ class SimpleCNNBase(torch.nn.Module):
         out = F.relu(self.linear1(out))
         return out
 
-    def forward(self, x):
+    def forward(self, x, **kwargs):
         out = self.get_embedding(x)
         out = self.linear2(out)
         return out

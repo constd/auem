@@ -20,7 +20,12 @@ from auem.data.caching import FeatureCache
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["AudiosetAnnotationReaderV2", "AudiosetDataset"]
+__all__ = [
+    "AudiosetAnnotationReaderV1",
+    "AudiosetAnnotationReaderV2",
+    "AudiosetDataset",
+    "IterableAudiosetDataset",
+]
 
 
 class AudiosetAnnotationReaderV1(DictReader):
@@ -341,7 +346,7 @@ def _gen_frames(
 class IterableAudiosetDataset(torch.utils.data.IterableDataset):
     """Iterable-style Torch dataset for sampling from AudioSet data."""
 
-    STREAMER_DEFAULTS = {"n_frames": 5, "n_target_frames": 1}
+    STREAMER_DEFAULTS = {"n_frames": 10, "n_target_frames": 1}
 
     def __init__(
         self,
@@ -349,6 +354,7 @@ class IterableAudiosetDataset(torch.utils.data.IterableDataset):
         ontology: Union[str, Path],
         audioset_annotations: Union[str, Path],
         streamer_settings: Optional[dict] = None,
+        evaluate: bool = False,
         **audioset_kwargs,
     ):
         self.audioset_dataset = AudiosetDataset(
@@ -356,6 +362,7 @@ class IterableAudiosetDataset(torch.utils.data.IterableDataset):
         )
 
         self.streamer_settings = streamer_settings
+        self.evaluate = evaluate
 
         self.start = 0
         self.end = len(self.audioset_dataset)
@@ -372,15 +379,18 @@ class IterableAudiosetDataset(torch.utils.data.IterableDataset):
             for index in range(start_index, end_index)
         ]
 
-        audiofile_mux = pescador.StochasticMux(
-            audiofile_streamers,
-            # todo: eventually, this should probably be a function of
-            #   <batch size> & <# workers>
-            # should probably be (batch_size / num_workers)
-            n_active=6,
-            # on average how many samples are generated from a stream before it dies
-            rate=5,
-        )
+        if self.evaluate:
+            audiofile_mux = pescador.RoundRobinMux(audiofile_streamers)
+        else:
+            audiofile_mux = pescador.StochasticMux(
+                audiofile_streamers,
+                # todo: eventually, this should probably be a function of
+                #   <batch size> & <# workers>
+                # should probably be (batch_size / num_workers)
+                n_active=6,
+                # on average how many samples are generated from a stream before it dies
+                rate=5,
+            )
 
         return audiofile_mux
 
@@ -402,7 +412,12 @@ class IterableAudiosetDataset(torch.utils.data.IterableDataset):
             iter_start = self.start + worker_id * per_worker
             iter_end = min(iter_start + per_worker, self.end)
 
-        return self._build_streamer(iter_start, iter_end).cycle()
+        if self.evaluate:
+            return self._build_streamer(iter_start, iter_end).iterate(
+                len(self.audioset_dataset)
+            )
+        else:
+            return self._build_streamer(iter_start, iter_end).cycle()
 
     def sampling_report(self):
         """Placeholder, #TODO."""

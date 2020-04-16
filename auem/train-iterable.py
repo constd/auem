@@ -1,0 +1,131 @@
+import logging
+import os
+from typing import Tuple
+
+import hydra
+import torch
+from omegaconf import DictConfig
+from torch.cuda import is_available as is_cuda_available
+from torch.utils import tensorboard as tb
+from torch.utils.data import DataLoader, Dataset
+from tqdm import tqdm
+
+# import auem.evaluation.confusion as confusion
+
+logger = logging.getLogger(__name__)
+
+
+def datasets(cfg: DictConfig) -> Tuple[Dataset]:
+    transforms = hydra.utils.instantiate(cfg.transform)
+    ds_train = hydra.utils.get_class(cfg.dataset["class"])(
+        audioset_annotations=cfg.dataset["folds"]["train"],
+        transforms=transforms,
+        **cfg.dataset.params,
+    )
+    ds_valid = hydra.utils.get_class(cfg.dataset["class"])(
+        audioset_annotations=cfg.dataset["folds"]["val"],
+        transforms=transforms,
+        evaluate=True,
+        **cfg.dataset.params,
+    )
+    return (ds_train, ds_valid)
+
+
+def dataloaders(
+    cfg: DictConfig, ds_train: Dataset, ds_valid: Dataset
+) -> Tuple[DataLoader]:
+    dl_train = hydra.utils.get_class(cfg.dataloader["class"])(
+        ds_train, **cfg.dataloader.params
+    )
+    dl_valid = hydra.utils.get_class(cfg.dataloader["class"])(
+        ds_valid, **cfg.dataloader.params
+    )
+    return (dl_train, dl_valid)
+
+
+def train(cfg: DictConfig) -> None:
+    device = cfg.cuda.device if cfg.cuda.enable and is_cuda_available() else "cpu"
+
+    ds_train, ds_valid = datasets(cfg)
+    dl_train, dl_valid = dataloaders(cfg, ds_train, ds_valid)
+
+    model = hydra.utils.instantiate(cfg.model).to(device)
+
+    optimizer = hydra.utils.get_class(cfg.optim["class"])(
+        model.parameters(), **cfg.optim.params
+    )
+    scheduler = hydra.utils.get_class(cfg.scheduler["class"])(
+        optimizer, **cfg.scheduler.params
+    )
+    criterion = hydra.utils.instantiate(cfg.criterion)
+
+    writer = tb.SummaryWriter()
+
+    train_iterator = iter(dl_train)
+    batch = train_iterator.next()
+    writer.add_graph(model, batch["X"].to(device))
+
+    for epoch in tqdm(range(cfg.epochs), position=0, desc="Epoch"):
+        losses = 0
+        model.train()
+        # import ipdb; ipdb.set_trace()
+        for batch_num in tqdm(range(cfg.steps), position=1, desc="Batch"):
+            X, y = batch["X"].to(device), batch["label"].to(device)
+            optimizer.zero_grad()
+            output = model(X)
+            loss = criterion(output, y)
+            losses += loss.item()
+            loss.backward()
+            optimizer.step()
+            scheduler.step()
+            writer.add_scalar(
+                f"loss/training/step", loss.item(), global_step=batch_num,
+            )
+            batch = train_iterator.next()
+        writer.add_scalar(f"loss/training/epoch", losses / batch_num, global_step=epoch)
+        # writer.add_scalars(f"accuracy/training", accuracies, global_step=epoch)
+        # evaluation loop
+        if cfg.eval:
+            eval_iterator = iter(dl_valid)
+            model.eval()
+            losses = 0
+            for _, batch in tqdm(enumerate(eval_iterator), position=1, desc="Batch"):
+                X, y = batch["X"].to(device), batch["label"].to(device)
+                output = model(X)
+                loss = criterion(output, y.squeeze_())
+                # Get the embeddings for each batch, so we can save them for tensorboard
+                # if (
+                #     cfg.checkpoint.embeddings.enabled
+                #     and epoch % cfg.checkpoint.embeddings.frequency == 0
+                # ):
+                #     embeddings.extend(output.to("cpu").tolist())
+                #     ys.extend([ds_valid.c2l[x] for x in y.tolist()])
+            writer.add_scalar(
+                f"loss/validation/epoch", losses / len(batch), global_step=epoch
+            )
+            # writer.add_scalars(f"accuracy/validation", accuracies, global_step=epoch)
+            # if (
+            #     cfg.checkpoint.embeddings.enabled
+            #     and epoch % cfg.checkpoint.embeddings.frequency == 0
+            # ):
+            #     writer.add_embedding(
+            #         torch.tensor(embeddings), metadata=ys, global_step=epoch
+            #     )
+            # confusion.log_confusion_matrix(writer, y, output, class_names)
+        if cfg.checkpoint.model.enabled and epoch % cfg.checkpoint.model.frequency == 0:
+            torch.save(model, f"{os.getcwd()}/{cfg.model.name}_{cfg.epochs}.pt")
+    torch.save(model, f"{os.getcwd()}/{cfg.model.name}_{cfg.epochs}_final.pt")
+
+
+@hydra.main(config_path="config/config-iterable.yaml")
+def main(cfg: DictConfig) -> None:
+    import git
+
+    repo = git.Repo(search_parent_directories=True)
+    sha = repo.head.object.hexsha
+    logger.info(f"""Git hash: {str(sha)}""")
+    train(cfg)
+
+
+if __name__ == "__main__":
+    main()
