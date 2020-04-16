@@ -14,12 +14,13 @@ import librosa
 import numpy as np
 import pescador
 import torch
-import torchaudio
 import torchvision
 
 from auem.data.caching import FeatureCache
 
 logger = logging.getLogger(__name__)
+
+__all__ = ["AudiosetAnnotationReaderV2", "AudiosetDataset"]
 
 
 class AudiosetAnnotationReaderV1(DictReader):
@@ -269,11 +270,10 @@ class AudiosetDataset(torch.utils.data.Dataset):
         )
 
         max_length = sr * 10
-        temp = torch.zeros(sr * 10).unsqueeze(0)
+        temp = torch.zeros(max_length).unsqueeze(0)
         temp[0, : min(audio.shape[0], max_length)] = torch.tensor(audio)
 
-        # resample here so that all subsequent transforms can assume a SR
-        audio = torchaudio.transforms.Resample(orig_freq=sr, new_freq=self.SR)(temp)
+        audio = temp
         data = deepcopy(audio)
         if self.transforms:
             data = self.transforms(data)

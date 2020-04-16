@@ -16,6 +16,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: Install libsnd
+      run: |
+        sudo apt-get install libsndfile1-dev
     - name: Set up Python 3.8
       uses: actions/setup-python@v1
       with:

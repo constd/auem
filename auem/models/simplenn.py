@@ -1,6 +1,8 @@
 from torch import nn
 from torch.nn import functional as F
 
+__all__ = ["SimpleNN"]
+
 
 class SimpleNN(nn.Module):
     def __init__(self, input_size, num_classes=10):

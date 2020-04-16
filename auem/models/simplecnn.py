@@ -2,6 +2,8 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
+__all__ = ["SimpleCNNBase"]
+
 
 class SimpleCNNBase(torch.nn.Module):
     def __init__(self, input_size, num_classes=10):
@@ -23,7 +25,8 @@ class SimpleCNNBase(torch.nn.Module):
         # (x, 16, (55 - 4 + 1) / 2=26, (273-4+1)/2 = 135 )
         self.bn4 = nn.BatchNorm2d(32)
 
-        self.linear1 = nn.Linear(32 * 26 * 135, 128)
+        self.linear1 = nn.Linear(input_size, 128)
+        # self.linear1 = nn.Linear(32 * 26 * 135, 128)
         self.linear2 = nn.Linear(128, num_classes)
 
     def get_embedding(self, x):
