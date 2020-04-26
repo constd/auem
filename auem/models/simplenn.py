@@ -1,29 +1,40 @@
+"""A simple dense model."""
+import numpy as np
 from torch import nn
 from torch.nn import functional as F
 
 __all__ = ["SimpleNN"]
 
 
+DEFAULT_DENSE_LAYER_DEF = [1024, 512, 256, 128]
+
+
 class SimpleNN(nn.Module):
-    def __init__(self, input_size, num_classes=10):
-        super(SimpleNN, self).__init__()
-        self.linear1 = nn.Linear(input_size, 1024)
-        # self.linear2 = nn.Linear(2048, 1024)
-        self.linear3 = nn.Linear(1024, 512)
-        self.linear4 = nn.Linear(512, 256)
-        self.linear5 = nn.Linear(256, 128)
-        self.linear6 = nn.Linear(128, num_classes)
+    """A configurable Dense Network."""
+
+    def __init__(
+        self,
+        input_shape,
+        num_classes: int = 10,
+        dense_layer_def=DEFAULT_DENSE_LAYER_DEF,
+        out_nonlinearity="softmax",
+    ):
+        super(SimpleNN, self).__init__(
+            dense_layer_def[-1], num_classes, out_nonlinearity=out_nonlinearity
+        )
+
+        self.dense_layers = []
+
+        input_size = np.prod(input_shape[1:])
+        previous_shape = input_size
+        for layer_def in dense_layer_def:
+            self.dense_layers.append(nn.Linear(previous_shape, layer_def))
+            previous_shape = layer_def
 
     def get_embedding(self, x):
+        """Calculate this model's outputs."""
         out = x.reshape(x.size(0), -1)
-        out = F.leaky_relu(self.linear1(out))
-        # out = F.leaky_relu(self.linear2(out))
-        out = F.leaky_relu(self.linear3(out))
-        out = F.leaky_relu(self.linear4(out))
-        out = F.leaky_relu(self.linear5(out))
-        return out
+        for layer in self.dense_layers:
+            out = F.leaky_relu(layer(out))
 
-    def forward(self, x):
-        out = self.get_embedding(x)
-        out = self.linear6(out)
-        return nn.functional.softmax(out)
+        return out

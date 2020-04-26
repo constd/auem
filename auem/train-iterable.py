@@ -1,68 +1,37 @@
+"""Train a 'classification' model using an IterableDataset."""
 import logging
 import os
-from typing import Tuple
 
 import hydra
 import torch
 from omegaconf import DictConfig
 from torch.cuda import is_available as is_cuda_available
 from torch.utils import tensorboard as tb
-from torch.utils.data import DataLoader, Dataset
+
 from tqdm import tqdm
+
+from .train import dataloaders, datasets, training_setup
 
 # import auem.evaluation.confusion as confusion
 
 logger = logging.getLogger(__name__)
 
 
-def datasets(cfg: DictConfig) -> Tuple[Dataset]:
-    transforms = hydra.utils.instantiate(cfg.transform)
-    ds_train = hydra.utils.get_class(cfg.dataset["class"])(
-        audioset_annotations=cfg.dataset["folds"]["train"],
-        transforms=transforms,
-        **cfg.dataset.params,
-    )
-    ds_valid = hydra.utils.get_class(cfg.dataset["class"])(
-        audioset_annotations=cfg.dataset["folds"]["val"],
-        transforms=transforms,
-        evaluate=True,
-        **cfg.dataset.params,
-    )
-    return (ds_train, ds_valid)
-
-
-def dataloaders(
-    cfg: DictConfig, ds_train: Dataset, ds_valid: Dataset
-) -> Tuple[DataLoader]:
-    dl_train = hydra.utils.get_class(cfg.dataloader["class"])(
-        ds_train, **cfg.dataloader.params
-    )
-    dl_valid = hydra.utils.get_class(cfg.dataloader["class"])(
-        ds_valid, **cfg.dataloader.params
-    )
-    return (dl_train, dl_valid)
-
-
 def train(cfg: DictConfig) -> None:
+    """Train a model given a configuration from the config."""
     device = cfg.cuda.device if cfg.cuda.enable and is_cuda_available() else "cpu"
 
     ds_train, ds_valid = datasets(cfg)
     dl_train, dl_valid = dataloaders(cfg, ds_train, ds_valid)
 
-    model = hydra.utils.instantiate(cfg.model).to(device)
-
-    optimizer = hydra.utils.get_class(cfg.optim["class"])(
-        model.parameters(), **cfg.optim.params
-    )
-    scheduler = hydra.utils.get_class(cfg.scheduler["class"])(
-        optimizer, **cfg.scheduler.params
-    )
-    criterion = hydra.utils.instantiate(cfg.criterion)
-
-    writer = tb.SummaryWriter()
-
+    # Setup the train iterator, and get an example batch to use in defining the model.
     train_iterator = iter(dl_train)
     batch = train_iterator.next()
+
+    model = hydra.utils.instantiate(cfg.model, batch["X"].shape).to(device)
+    optimizer, scheduler, criterion = training_setup(cfg, model)
+
+    writer = tb.SummaryWriter()
     writer.add_graph(model, batch["X"].to(device))
 
     for epoch in tqdm(range(cfg.epochs), position=0, desc="Epoch"):
@@ -119,6 +88,7 @@ def train(cfg: DictConfig) -> None:
 
 @hydra.main(config_path="config/config-iterable.yaml")
 def main(cfg: DictConfig) -> None:
+    """Execute Training using hydra configs."""
     import git
 
     repo = git.Repo(search_parent_directories=True)
