@@ -27,7 +27,7 @@ def datasets(cfg: DictConfig) -> Tuple[Dataset]:
         transforms=transforms,
         **cfg.dataset.params,
     )
-    ds_valid = hydra.utils.gget_class(cfg.dataset["class"])(
+    ds_valid = hydra.utils.get_class(cfg.dataset["class"])(
         audioset_annotations=cfg.dataset["folds"]["val"],
         transforms=transforms,
         **cfg.dataset.params,
