@@ -3,13 +3,15 @@ import numpy as np
 from torch import nn
 from torch.nn import functional as F
 
+from .base import AuemClassifierBase
+
 __all__ = ["SimpleNN"]
 
 
 DEFAULT_DENSE_LAYER_DEF = [1024, 512, 256, 128]
 
 
-class SimpleNN(nn.Module):
+class SimpleNN(AuemClassifierBase):
     """A configurable Dense Network."""
 
     def __init__(

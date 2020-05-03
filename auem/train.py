@@ -11,7 +11,6 @@ from omegaconf import DictConfig
 from torch.cuda import is_available as is_cuda_available
 from torch.utils import tensorboard as tb
 from torch.utils.data import DataLoader, Dataset
-
 from tqdm import tqdm
 
 # import auem.evaluation.confusion as confusion
@@ -30,6 +29,7 @@ def datasets(cfg: DictConfig) -> Tuple[Dataset]:
     ds_valid = hydra.utils.get_class(cfg.dataset["class"])(
         audioset_annotations=cfg.dataset["folds"]["val"],
         transforms=transforms,
+        evaluate=True,
         **cfg.dataset.params,
     )
     return (ds_train, ds_valid)

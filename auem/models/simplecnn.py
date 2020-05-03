@@ -1,9 +1,13 @@
 """A simple, configurable CNN model."""
+from collections.abc import Iterable
+
 import numpy as np
 from torch import nn
-from torch.nn import functional as F
 
 from .base import AuemClassifierBase
+
+# from torch.nn import functional as F
+
 
 __all__ = ["SimpleCNNBase"]
 
@@ -33,22 +37,24 @@ class SimpleCNNBase(AuemClassifierBase):
             dense_layer_def[-1], num_classes, out_nonlinearity=out_nonlinearity
         )
 
-        self.conv_layers = []
-        self.conv_bns = []
-        self.dense_layers = []
+        conv_layers = []
+        dense_layers = []
 
         prev_layer_def = (1, 1, (1,))
         last_out_shape = (None,) + input_shape[1:]
         for layer_def in conv_layer_def:
-            self.conv_layers.append(
+            conv_layers.append(
                 nn.Conv2d(
                     prev_layer_def[0],  # previous n channels
                     layer_def[0],  # current n channels
                     kernel_size=layer_def[1],
-                    stride=layer_def[2],
+                    stride=tuple(layer_def[2])
+                    if isinstance(layer_def[2], Iterable)
+                    else layer_def[2],
                 )
             )
-            self.conv_bns.append(nn.BatchNorm2d(layer_def[0]))
+            conv_layers.append(nn.BatchNorm2d(layer_def[0]))
+            conv_layers.append(nn.ReLU())
 
             prev_layer_def = layer_def
             x_stride = layer_def[2][0]
@@ -64,15 +70,27 @@ class SimpleCNNBase(AuemClassifierBase):
 
         last_out_shape = (None, np.prod(last_out_shape[1:]))
         for layer_def in dense_layer_def:
-            self.dense_layers.append(nn.Linear(last_out_shape[1], layer_def))
+            dense_layers.append(nn.Linear(last_out_shape[1], layer_def))
             last_out_shape = (None, layer_def)
+            dense_layers.append(nn.ReLU())
+
+        self.convs = nn.Sequential(*conv_layers)
+        self.dense = nn.Sequential(*dense_layers)
+        # self.embedding_model = nn.Sequential(
+        #     *conv_layers,
+        #     *dense_layers
+        # )
 
     def get_embedding(self, x):
         """Calculate this model's outputs."""
-        out = x
-        for i in range(len(self.conv_layers)):
-            out = F.relu(self.conv_bns[i](self.conv_layers[i](out)))
+        out = self.convs(x)
         out = out.view(out.size(0), -1)
-        for dense_layer in self.dense_layers:
-            out = F.relu(dense_layer(out))
+        out = self.dense(out)
+        # out = self.embedding_model(x)
+        # out = x
+        # for i in range(len(self.conv_layers)):
+        #     out = F.relu(self.conv_bns[i](self.conv_layers[i](out)))
+        # out = out.view(out.size(0), -1)
+        # for dense_layer in self.dense_layers:
+        #     out = F.relu(dense_layer(out))
         return out

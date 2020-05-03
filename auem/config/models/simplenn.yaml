@@ -1,5 +1,7 @@
 model:
   class: auem.models.simplenn.SimpleNN
   params:
-    input_size: 1280
     num_classes: 632
+    dense_layer_def:
+      - 256
+      - 128
