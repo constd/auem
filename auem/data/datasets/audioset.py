@@ -367,6 +367,17 @@ class IterableAudiosetDataset(torch.utils.data.IterableDataset):
         self.start = 0
         self.end = len(self.audioset_dataset)
 
+    def __len__(self):
+        """If evaluate is true, return the length of the validation set.
+
+        Otherwise, length is not defined.
+        """
+        if self.evaluate:
+            return len(self.audioset_dataset)
+
+        else:
+            return float("inf")
+
     def _build_streamer(self, start_index: int, end_index: int) -> pescador.Streamer:
         """Create a pescador streamer for the provided indecies into the dataset."""
         audiofile_streamers = [

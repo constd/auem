@@ -3,14 +3,14 @@ defaults:
   - datasets: audioset-dev2k-iterable
   - dataloaders: standard
   - transforms: melspec
-  - models: simplenn
+  - models: simplecnn
   - optims: adam
   - criterions: bceloss
   - schedulers: cyclelr
 
 eval: True
 epochs: 10
-steps: 100
+steps: 125
 checkpoint:
   embeddings:
     enabled: True

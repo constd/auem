@@ -1,5 +1,10 @@
 model:
   class: auem.models.simplecnn.SimpleCNNBase
   params:
-    input_size: 42432
     num_classes: 632
+    conv_layer_def:
+      - [8, 5, [2, 1]]
+      - [16, 3, [1, 1]]
+      - [32, 3, [1, 1]]
+    dense_layer_def:
+      - 256

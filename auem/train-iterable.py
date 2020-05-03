@@ -7,10 +7,9 @@ import torch
 from omegaconf import DictConfig
 from torch.cuda import is_available as is_cuda_available
 from torch.utils import tensorboard as tb
-
 from tqdm import tqdm
 
-from .train import dataloaders, datasets, training_setup
+from auem.train import dataloaders, datasets, training_setup
 
 # import auem.evaluation.confusion as confusion
 
@@ -37,7 +36,6 @@ def train(cfg: DictConfig) -> None:
     for epoch in tqdm(range(cfg.epochs), position=0, desc="Epoch"):
         losses = 0
         model.train()
-        # import ipdb; ipdb.set_trace()
         for batch_num in tqdm(range(cfg.steps), position=1, desc="Batch"):
             X, y = batch["X"].to(device), batch["label"].to(device)
             optimizer.zero_grad()
@@ -51,6 +49,7 @@ def train(cfg: DictConfig) -> None:
                 f"loss/training/step", loss.item(), global_step=batch_num,
             )
             batch = train_iterator.next()
+
         writer.add_scalar(f"loss/training/epoch", losses / batch_num, global_step=epoch)
         # writer.add_scalars(f"accuracy/training", accuracies, global_step=epoch)
         # evaluation loop
@@ -58,7 +57,12 @@ def train(cfg: DictConfig) -> None:
             eval_iterator = iter(dl_valid)
             model.eval()
             losses = 0
-            for _, batch in tqdm(enumerate(eval_iterator), position=1, desc="Batch"):
+            for _, batch in tqdm(
+                enumerate(eval_iterator),
+                total=len(ds_valid) // cfg.dataloader.params.batch_size,
+                position=1,
+                desc="Batch",
+            ):
                 X, y = batch["X"].to(device), batch["label"].to(device)
                 output = model(X)
                 loss = criterion(output, y.squeeze_())
@@ -82,8 +86,8 @@ def train(cfg: DictConfig) -> None:
             #     )
             # confusion.log_confusion_matrix(writer, y, output, class_names)
         if cfg.checkpoint.model.enabled and epoch % cfg.checkpoint.model.frequency == 0:
-            torch.save(model, f"{os.getcwd()}/{cfg.model.name}_{cfg.epochs}.pt")
-    torch.save(model, f"{os.getcwd()}/{cfg.model.name}_{cfg.epochs}_final.pt")
+            torch.save(model, f"{os.getcwd()}/{cfg.model['class']}_{cfg.epochs}.pt")
+    torch.save(model, f"{os.getcwd()}/{cfg.model['class']}_{cfg.epochs}_final.pt")
 
 
 @hydra.main(config_path="config/config-iterable.yaml")
