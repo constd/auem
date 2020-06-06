@@ -193,6 +193,6 @@ def from_arch(arch_name, **kwargs):
     return model_fn(**kwargs)
 
 
-def CQTResNet(feature_shape, num_classes, arch):
+def CQTResNet(input_shape, num_classes, arch):
     """Build a spectrogram resnet, including setting the num classes."""
     return from_arch(arch, num_classes=num_classes)
