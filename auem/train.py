@@ -125,31 +125,37 @@ def train(cfg: DictConfig) -> None:
         # writer.add_scalars(f"accuracy/training", accuracies, global_step=epoch)
         # evaluation loop
         if cfg.eval:
-            model.eval()
-            embeddings, ys, losses = [], [], 0
-            for _, batch in tqdm(
-                enumerate(dl_valid), total=num_batches_valid, position=1, desc="Batch"
-            ):
-                X, y = batch["X"].to(device), batch["label"].to(device)
-                output = model.get_embedding(X)
-                loss = criterion(output, y.squeeze_())
+            with torch.no_grad():
+                model.eval()
+                embeddings, ys, losses = [], [], 0
+                for _, batch in tqdm(
+                    enumerate(dl_valid),
+                    total=num_batches_valid,
+                    position=1,
+                    desc="Batch",
+                ):
+                    X, y = batch["X"].to(device), batch["label"].to(device)
+                    output = model.get_embedding(X)
+                    loss = criterion(output, y.squeeze_())
+                    losses += loss.item()
+                    if (
+                        cfg.checkpoint.embeddings.enabled
+                        and epoch % cfg.checkpoint.frequency == 0
+                    ):
+                        embeddings.extend(output.to("cpu").tolist())
+                        ys.extend([ds_valid.c2l[x] for x in y.tolist()])
+                writer.add_scalar(
+                    f"loss/epoch/validation", losses / len(batch), global_step=epoch
+                )
+                # writer.add_scalars(
+                # f"accuracy/validation", accuracies, global_step=epoch)
                 if (
                     cfg.checkpoint.embeddings.enabled
-                    and epoch % cfg.checkpoint.frequency == 0
+                    and epoch % cfg.checkpoint.embeddings.frequency == 0
                 ):
-                    embeddings.extend(output.to("cpu").tolist())
-                    ys.extend([ds_valid.c2l[x] for x in y.tolist()])
-            writer.add_scalar(
-                f"loss/epoch/validation", losses / len(batch), global_step=epoch
-            )
-            # writer.add_scalars(f"accuracy/validation", accuracies, global_step=epoch)
-            if (
-                cfg.checkpoint.embeddings.enabled
-                and epoch % cfg.checkpoint.embeddings.frequency == 0
-            ):
-                writer.add_embedding(
-                    torch.tensor(embeddings), metadata=ys, global_step=epoch
-                )
+                    writer.add_embedding(
+                        torch.tensor(embeddings), metadata=ys, global_step=epoch
+                    )
 
             # confusion.log_confusion_matrix(writer, y, output, class_names)
         if cfg.checkpoint.model.enabled and epoch % cfg.checkpoint.model.frequency == 0:
