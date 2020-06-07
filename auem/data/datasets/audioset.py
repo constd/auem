@@ -195,7 +195,12 @@ def _load_audio(
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
 
-        return librosa.load(audio_path, offset=start_seconds, duration=duration)
+        try:
+            return librosa.load(audio_path, offset=start_seconds, duration=duration)
+
+        except ValueError:
+            logger.error(f"Caught error loading or processing audio file {audio_path}")
+            return [], None
 
 
 class AudiosetDataset(torch.utils.data.Dataset):
@@ -274,25 +279,26 @@ class AudiosetDataset(torch.utils.data.Dataset):
             sample["ytid"], sample["start_seconds"], sample["end_seconds"]
         )
 
-        max_length = sr * 10
-        temp = torch.zeros(max_length).unsqueeze(0)
-        temp[0, : min(audio.shape[0], max_length)] = torch.tensor(audio)
+        if len(audio) and sr is not None:
+            max_length = sr * 10
+            temp = torch.zeros(max_length).unsqueeze(0)
+            temp[0, : min(audio.shape[0], max_length)] = torch.tensor(audio)
 
-        audio = temp
-        data = deepcopy(audio)
-        if self.transforms:
-            data = self.transforms(data)
+            audio = temp
+            data = deepcopy(audio)
+            if self.transforms:
+                data = self.transforms(data)
 
-        labels = torch.zeros(self.c)
-        for c in sample["classes"]:
-            labels[c] = 1
-        return {
-            "raw": audio,
-            "X": data,
-            "label": labels,
-            "class": sample["classes"],
-            "class_name": [self.c2l[self.classes[x]] for x in sample["classes"]],
-        }
+            labels = torch.zeros(self.c)
+            for c in sample["classes"]:
+                labels[c] = 1
+            return {
+                "raw": audio,
+                "X": data,
+                "label": labels,
+                "class": sample["classes"],
+                "class_name": [self.c2l[self.classes[x]] for x in sample["classes"]],
+            }
 
     def __len__(self):
         """Size of the dataset, in annotations."""
@@ -324,23 +330,26 @@ def _gen_frames(
 ) -> Iterable[dict]:
     """Given an annotation index, load the audio file and generate frames from it."""
     sample_data = audioset_dataset[annotation_idx]
-    # sample['X'] is the mel spectrum
-    _, n_features, n_available_frames = sample_data["X"].shape
+    if sample_data is not None:
+        # sample['X'] is the mel spectrum
+        _, n_features, n_available_frames = sample_data["X"].shape
 
-    # number of frames available
-    frame_index = np.arange(n_available_frames - (n_frames + n_target_frames))
+        # number of frames available
+        frame_index = np.arange(n_available_frames - (n_frames + n_target_frames))
 
-    while True:
-        np.random.shuffle(frame_index)
+        while True:
+            np.random.shuffle(frame_index)
 
-        for i in frame_index:
-            sample_frames = sample_data.copy()
-            del sample_frames["raw"]
-            sample_frames["X"] = sample_data["X"][:, :, i : i + n_frames]
-            sample_frames["Y"] = sample_data["X"][
-                :, :, i + n_frames : i + n_frames + n_target_frames
-            ]
-            yield sample_frames
+            for i in frame_index:
+                sample_frames = sample_data.copy()
+                del sample_frames["raw"]
+                sample_frames["X"] = sample_data["X"][:, :, i : i + n_frames]
+                sample_frames["Y"] = sample_data["X"][
+                    :, :, i + n_frames : i + n_frames + n_target_frames
+                ]
+                yield sample_frames
+
+    # else, let this streamer die.
 
 
 class IterableAudiosetDataset(torch.utils.data.IterableDataset):
@@ -380,6 +389,15 @@ class IterableAudiosetDataset(torch.utils.data.IterableDataset):
 
     def _build_streamer(self, start_index: int, end_index: int) -> pescador.Streamer:
         """Create a pescador streamer for the provided indecies into the dataset."""
+        if (
+            self.streamer_settings["n_frames"] is None
+            or self.streamer_settings["n_target_frames"] is None
+        ):
+            raise ValueError(
+                "n_famres and n_target frames are currently required in the config "
+                "for an Iterable dataset."
+            )
+
         audiofile_streamers = [
             _gen_frames(
                 self.audioset_dataset,
@@ -398,9 +416,9 @@ class IterableAudiosetDataset(torch.utils.data.IterableDataset):
                 # todo: eventually, this should probably be a function of
                 #   <batch size> & <# workers>
                 # should probably be (batch_size / num_workers)
-                n_active=6,
+                n_active=self.streamer_settings["n_active"],
                 # on average how many samples are generated from a stream before it dies
-                rate=5,
+                rate=self.streamer_settings["rate"],
             )
 
         return audiofile_mux
