@@ -23,8 +23,8 @@ def test_create_model(feature_shape, n_classes, out_nonlinearity):
 
     model.train()
     y_hat = model(batch)
-    assert len(y_hat) == len(batch)
-    assert y_hat.shape[1] == n_classes
+    assert y_hat.shape[1] == batch.shape[0]
+    assert y_hat.shape[-1] == n_classes
 
     # Make sure we can update the weights successfully.
     # loss = torch.nn.NLLLoss(model.parameters())

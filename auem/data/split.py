@@ -30,9 +30,8 @@ import logging
 import pathlib
 from typing import List
 
-import torch
-
 import click
+import torch
 
 logger = logging.getLogger(__name__)
 
