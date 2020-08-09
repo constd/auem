@@ -10,3 +10,5 @@ dataset:
     streamer_settings:
       n_frames: 10
       n_target_frames: 1
+      n_active: 2
+      rate: 3

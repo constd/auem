@@ -1,0 +1,5 @@
+model:
+  class: auem.models.resnet.CQTResNet
+  params:
+    num_classes: 632
+    arch: resnet18
