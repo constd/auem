@@ -5,7 +5,7 @@ import torch
 from auem.models.audiotransformer import SimpleTransformerEncoderClassifier
 
 
-@pytest.mark.parametrize("feature_shape", [(None, 2206, 128), (None, 1102, 128)])
+@pytest.mark.parametrize("feature_shape", [(None, 256, 128), (None, 64, 128)])
 @pytest.mark.parametrize("n_classes", [2, 10])
 @pytest.mark.parametrize("out_nonlinearity", ["none"])
 def test_create_model(feature_shape, n_classes, out_nonlinearity):
