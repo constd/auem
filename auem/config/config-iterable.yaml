@@ -1,16 +1,16 @@
 defaults:
   - hydra/job_logging: info
-  - datasets: audioset-dev2k-iterable
+  - datasets: audioset-iterable
   - dataloaders: standard
   - transforms: melspec
-  - models: simplecnn
+  - models: resnet18
   - optims: adam
   - criterions: bceloss
   - schedulers: cyclelr
 
 eval: True
-epochs: 10
-steps: 125
+epochs: 20
+steps: 500
 checkpoint:
   embeddings:
     enabled: True
@@ -18,6 +18,7 @@ checkpoint:
   model:
     enabled: True
     frequency: 100
+validation_accuracy: True
 cuda:
   enable: True
   device: "cuda"

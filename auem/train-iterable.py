@@ -32,11 +32,12 @@ def train(cfg: DictConfig) -> None:
 
     writer = tb.SummaryWriter()
     writer.add_graph(model, batch["X"].to(device))
+    global_step_num = 0
 
     for epoch in tqdm(range(cfg.epochs), position=0, desc="Epoch"):
-        losses = 0
+        mean_train_loss, mean_val_loss, losses = 0, 0, 0
         model.train()
-        for batch_num in tqdm(range(cfg.steps), position=1, desc="Batch"):
+        for batch_num in tqdm(range(cfg.steps), position=1, desc="Train"):
             X, y = batch["X"].to(device), batch["label"].to(device)
             optimizer.zero_grad()
             output = model(X)
@@ -45,48 +46,76 @@ def train(cfg: DictConfig) -> None:
             loss.backward()
             optimizer.step()
             scheduler.step()
+
             writer.add_scalar(
-                f"loss/training/step", loss.item(), global_step=batch_num,
+                f"loss/training/step",
+                loss.item(),
+                global_step=(global_step_num + batch_num),
             )
             batch = train_iterator.next()
 
-        writer.add_scalar(f"loss/training/epoch", losses / batch_num, global_step=epoch)
+        global_step_num += batch_num
+        mean_train_loss = losses / batch_num
+        writer.add_scalar(f"loss/training/epoch", mean_train_loss, global_step=epoch)
         # writer.add_scalars(f"accuracy/training", accuracies, global_step=epoch)
         # evaluation loop
         if cfg.eval:
-            eval_iterator = iter(dl_valid)
-            model.eval()
-            losses = 0
-            for _, batch in tqdm(
-                enumerate(eval_iterator),
-                total=len(ds_valid) // cfg.dataloader.params.batch_size,
-                position=1,
-                desc="Batch",
-            ):
-                X, y = batch["X"].to(device), batch["label"].to(device)
-                output = model(X)
-                loss = criterion(output, y.squeeze_())
-                # Get the embeddings for each batch, so we can save them for tensorboard
+            # see https://discuss.pytorch.org/t/model-eval-vs-with-torch-no-grad/19615/3
+            # no_grad will speed up validation a lot.
+            with torch.no_grad():
+                eval_iterator = iter(dl_valid)
+                model.eval()
+                n_correct, n_total, losses = 0, 0, 0
+                for batch_num, batch in tqdm(
+                    enumerate(eval_iterator),
+                    total=len(ds_valid) // cfg.dataloader.params.batch_size,
+                    position=1,
+                    desc="Valid",
+                ):
+                    X, y = batch["X"].to(device), batch["label"].to(device)
+                    output = model(X)
+                    loss = criterion(output, y.squeeze_())
+                    losses += loss.item()
+
+                    n_total += y.size(0)
+                    n_correct += (
+                        (torch.max(output.data, 1).indices == torch.max(y, 1).indices)
+                        .sum()
+                        .item()
+                    )
+
+                    # Get the embeddings for each batch, so we can save in tensorboard
+                    # if (
+                    #     cfg.checkpoint.embeddings.enabled
+                    #     and epoch % cfg.checkpoint.embeddings.frequency == 0
+                    # ):
+                    #     embeddings.extend(output.to("cpu").tolist())
+                    #     ys.extend([ds_valid.c2l[x] for x in y.tolist()])
+                mean_val_loss = losses / batch_num
+                mean_val_acc = n_correct / n_total
+                writer.add_scalar(
+                    f"loss/validation/epoch", mean_val_loss, global_step=epoch
+                )
+                writer.add_scalar(
+                    f"accuracy/validation/epoch", mean_val_acc, global_step=epoch
+                )
                 # if (
                 #     cfg.checkpoint.embeddings.enabled
                 #     and epoch % cfg.checkpoint.embeddings.frequency == 0
                 # ):
-                #     embeddings.extend(output.to("cpu").tolist())
-                #     ys.extend([ds_valid.c2l[x] for x in y.tolist()])
-            writer.add_scalar(
-                f"loss/validation/epoch", losses / len(batch), global_step=epoch
-            )
-            # writer.add_scalars(f"accuracy/validation", accuracies, global_step=epoch)
-            # if (
-            #     cfg.checkpoint.embeddings.enabled
-            #     and epoch % cfg.checkpoint.embeddings.frequency == 0
-            # ):
-            #     writer.add_embedding(
-            #         torch.tensor(embeddings), metadata=ys, global_step=epoch
-            #     )
-            # confusion.log_confusion_matrix(writer, y, output, class_names)
+                #     writer.add_embedding(
+                #         torch.tensor(embeddings), metadata=ys, global_step=epoch
+                #     )
+                # confusion.log_confusion_matrix(writer, y, output, class_names)
         if cfg.checkpoint.model.enabled and epoch % cfg.checkpoint.model.frequency == 0:
             torch.save(model, f"{os.getcwd()}/{cfg.model['class']}_{cfg.epochs}.pt")
+
+        tqdm.write(
+            f"Epoch {epoch} Summary ({global_step_num} total batches) "
+            f"TL: {mean_train_loss:.5f} VL: {mean_val_loss:.5f} "
+            f"VAcc: {mean_val_acc:.3f}"
+        )
+
     torch.save(model, f"{os.getcwd()}/{cfg.model['class']}_{cfg.epochs}_final.pt")
 
 
