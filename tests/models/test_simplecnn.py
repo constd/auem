@@ -5,7 +5,7 @@ import torch
 from auem.models.simplecnn import SimpleCNNBase
 
 
-@pytest.mark.parametrize("feature_shape", [(None, 1, 128, 2206), (None, 1, 128, 1102)])
+@pytest.mark.parametrize("feature_shape", [(None, 1, 128, 256), (None, 1, 128, 64)])
 @pytest.mark.parametrize("n_classes", [2, 10])
 @pytest.mark.parametrize(
     "conv_def",

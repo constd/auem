@@ -23,7 +23,9 @@ class AuemClassifierBase(nn.Module):
     @abstractmethod
     def get_embedding(self, x):
         """Abstract method to get the child output."""
-        pass
+        raise NotImplementedError(
+            """Please implement the "embedding" part of the network"""
+        )
 
     def forward(self, x):
         """Calculate the forward pass using hte child class' embedding."""
@@ -32,6 +34,7 @@ class AuemClassifierBase(nn.Module):
 
         if not self.out_nonlinearity:
             return out
-
         elif self.out_nonlinearity == "softmax":
-            return nn.functional.softmax(out)
+            return nn.functional.softmax(out, dim=-1)
+        elif self.out_nonlinearity == "log_softmax":
+            return nn.functional.log_softmax(out, dim=-1)

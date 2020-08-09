@@ -1,7 +1,7 @@
 import datetime
 import itertools
 import pathlib
-from typing import Optional, Union, List
+from typing import List, Optional, Union
 
 import matplotlib.pyplot as plt
 import numpy as np

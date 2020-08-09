@@ -1,0 +1,12 @@
+model:
+  name: audiotransformer
+  class: auem.models.audiotransformer.SimpleTransformerEncoderClassifier
+  params:
+    child_embedding_size: 128
+    num_classes: 10
+    out_nonlinearity: log_softmax
+    nhead: 4
+    num_encoder_layers: 6
+    dim_feedforward: 256
+    dropout: .1
+    activation: 'gelu'

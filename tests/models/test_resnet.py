@@ -8,7 +8,7 @@ import auem.models.resnet as auem_resnet
 
 def test_resent_basicblock():
     """Test building a resnet block without building the whole model."""
-    batch_size, freq_bins, time_steps = (8, 128, 1102)
+    batch_size, freq_bins, time_steps = (8, 128, 256)
     in_planes = 1
     features = torch.rand((batch_size, 1, freq_bins, time_steps))
     n_planes = 16
@@ -23,7 +23,7 @@ def test_resent_basicblock():
     assert output.shape == (batch_size, n_planes, freq_bins, time_steps)
 
 
-@pytest.mark.parametrize("feature_shape", [(None, 1, 128, 2206), (None, 1, 128, 1102)])
+@pytest.mark.parametrize("feature_shape", [(None, 1, 128, 256), (None, 1, 128, 64)])
 @pytest.mark.parametrize("n_classes", [2, 10])
 @pytest.mark.parametrize("arch", ["resnet18", "resnet34"])
 def test_create_model(feature_shape, n_classes, arch):
