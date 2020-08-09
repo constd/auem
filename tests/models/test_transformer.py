@@ -15,6 +15,7 @@ def test_create_model(feature_shape, n_classes, out_nonlinearity):
     )
     criterion = torch.nn.BCEWithLogitsLoss()
 
+    # import pdb; pdb.set_trace()
     batch_shape = (8,) + feature_shape[1:]
     targets = torch.randint(n_classes, (8,))
     y = torch.zeros(8, n_classes)
@@ -23,7 +24,7 @@ def test_create_model(feature_shape, n_classes, out_nonlinearity):
 
     model.train()
     y_hat = model(batch)
-    assert y_hat.shape[1] == batch.shape[0]
+    assert y_hat.shape[0] == batch.shape[0]
     assert y_hat.shape[-1] == n_classes
 
     # Make sure we can update the weights successfully.

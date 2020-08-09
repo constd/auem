@@ -20,9 +20,9 @@ class AbsolutePositionalEncoding(nn.Module):
 
     def forward(self, x: torch.tensor) -> torch.tensor:
         # the assumption is that the frames at this point
-        # have the shape (batch_num_frames, num_frequency_bins, time_step)
-        posencs = torch.arange(start=0, end=x.shape[-1])
-        x[:, 0, :] = posencs
+        # have the shape (batch_num_frames, time_step, num_frequency_bins)
+        posencs = torch.arange(start=0, end=x.shape[1])
+        x[:, :, 0] = posencs
         return x
 
 
@@ -124,8 +124,8 @@ class AudioTransformerEncoder(nn.Module):
         # in our case is (num_frames, batch, num_frequencies)
         # TODO: figure out why we get an extra dimension and have to use .squeeze()
         src_enc = self.posenc(src).squeeze(1)
-        out = self.transformer(src_enc, src_mask)
-        return out
+        out = self.transformer(src_enc.permute(1, 0, 2), src_mask)
+        return out.permute(1, 0, 2)
 
 
 class SimpleTransformerEncDecClassifier(AuemClassifierBase):
@@ -203,7 +203,7 @@ class SimpleTransformerEncoderClassifier(AuemClassifierBase):
         return out
 
     def forward(self, src, src_mask=None):
+        src = torch.cat([torch.ones(src.size(0), 1, src.size(2)).to(src.device), src], dim=1)
         out = self.get_embedding(src=src, src_mask=src_mask)
-        # out = out.mean(dim=1)
-        out = self.class_layer(out[0])
+        out = self.class_layer(out[:, 0])
         return out
