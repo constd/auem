@@ -8,7 +8,7 @@ import warnings
 from copy import deepcopy
 from csv import DictReader
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Tuple, Union
+from typing import Dict, Iterable, List, Optional, Set, Tuple, Union
 
 import librosa
 import numpy as np
@@ -123,9 +123,10 @@ class AudiosetAnnotationReaderV2:
         - List of classes
     """
 
-    def __init__(self, annotation_path: Union[Path, str], classes: List):
+    def __init__(self, annotation_path: Union[Path, str], classes: Set[str]):
         self.annotation_path = annotation_path
         self.classes = classes
+        self._class_set = set(classes)
 
         self._annotations = None
         self._idx = None
@@ -138,7 +139,12 @@ class AudiosetAnnotationReaderV2:
                 fh, quotechar='"', delimiter=",", skipinitialspace=True
             ):
                 if not l[0].startswith("#"):
-                    self._annotations.append(l)
+                    if self._contains_class(l):
+                        self._annotations.append(l)
+
+    def _contains_class(self, line: str) -> bool:
+        line_classes = {x for x in line[3].split(",")}
+        return len(line_classes & (self._class_set)) > 0
 
     def __len__(self):
         """Return how many annotations were provided in this file."""
@@ -158,7 +164,8 @@ class AudiosetAnnotationReaderV2:
             "ytid": item[0],
             "start_seconds": float(item[1].strip()),
             "end_seconds": float(item[2].strip()),
-            "classes": [self.classes.index(k) for k in item[3].split(",")],
+            "classes": [self.classes.index(k) for k in item[3].split(",")
+                        if k in self._class_set],
         }
 
     def __next__(self):
@@ -204,7 +211,31 @@ def _load_audio(
 
 
 class AudiosetDataset(torch.utils.data.Dataset):
-    """Torch-style dataset class for loading AudioSet."""
+    """Torch-style dataset class for loading AudioSet.
+
+    Parameters
+    ----------
+    audioset_path : pathlike
+        The path to the folder containing the audio files for this partition.
+        Most likely one of ["balanced_train", "eval", "test"].
+
+    ontology: pathlike
+        Full path to the audioset ontology json file.
+
+    audioset_annotations: pathlike
+        Full path to a audioset ontology csv file.
+
+    transforms : List of Callable
+
+    audio_cache_dir : pathlike
+        Directory to save the feature cache.
+
+    filter_classes : List[str]
+        A list of audioset class IDs.
+
+        If provided, all examples which do not contain these classes
+        will be removed for training.
+    """
 
     SR = 44100
 
@@ -215,17 +246,22 @@ class AudiosetDataset(torch.utils.data.Dataset):
         audioset_annotations: Union[str, Path],
         transforms: Union[torch.nn.Module, torchvision.transforms.Compose] = None,
         audio_cache_dir: Union[str, Path] = None,
+        filter_classes: Optional[List[str]] = None
     ):
         self.transforms = transforms
         with open(ontology, "r") as f:
             self.ontology = json.load(f)
 
         self.c = len(self.ontology)
-        self.classes = [x["id"] for x in sorted(self.ontology, key=lambda x: x["id"])]
         self.c2l = {
             x["id"]: x["name"] for x in sorted(self.ontology, key=lambda x: x["id"])
         }
         self.l2c = {v: k for k, v in self.c2l.items()}
+        self.filter_classes = filter_classes
+        self.classes = [x["id"] for x in sorted(self.ontology, key=lambda x: x["id"])]
+
+        if self.filter_classes is not None:
+            self.classes = [x for x in sorted(self.filter_classes)]
 
         audioset_path = Path(audioset_path)
         self.datapaths = {x.stem: x for x in audioset_path.glob("*[m4a|webm]")}
