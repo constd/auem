@@ -14,26 +14,56 @@ jobs:
 
     runs-on: ubuntu-latest
 
+jobs:
+  setup:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            label: linux-64
+            prefix: /usr/share/miniconda3/envs/auem
+    name: ${{ matrix.label }}
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash -l {0}
     steps:
     - uses: actions/checkout@v2
-    - name: Install libsnd
-      run: |
-        sudo apt-get install libsndfile1-dev
-    - name: Set up Python 3.8
-      uses: actions/setup-python@v1
+    - uses: conda-incubator/setup-miniconda@v2
       with:
-        python-version: 3.8
-    - name: Install dependencies
+        python-version: 3.9
+        mamba-version: "*"
+        use-mamba: true
+        channels: conda-forge,defaults
+        channel-priority: true
+        activate-environment: electraud
+    - name: Set cache date
+      run: echo "DATE=$(date +'%Y%m%d')" >> $GITHUB_ENV
+    - uses: actions/cache@v2
+      with:
+        path: ${{ matrix.prefix }}
+        key: ${{ matrix.label }}-conda-${{ hashFiles('environment.yml') }}-${{ hashFiles('pyproject.toml') }}-${{ env.DATE }}-${{ env.CACHE_NUMBER }}
+      id: cache
+    - name: Update environment
+      run: mamba env update -n electraud -f environment.yml
+      if: steps.cache.outputs.cache-hit != 'true'
+    - name: Install and configure Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: latest
+        virtualenvs-create: false
+        virtualenvs-in-project: false
+        virtualenvs-path: ${{ matrix.prefix }}
+        installer-parallel: true
+      if: steps.cache.outputs.cache-hit != 'true'
+    - name: Install pip requirements
+      run: poetry install --no-interaction --no-dev
+      if: steps.cache.outputs.cache-hit != 'true'
+    - name: Install torch without cuda
       run: |
-        python -m pip install --upgrade pip poetry
-        poetry install
-    - name: Lint with flake8
-      run: |
-        pip install flake8
-        # stop the build if there are Python syntax errors or undefined names
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        poe force-nocuda
+      if: steps.cache.outputs.cache-hit != 'true'
+
     - name: Test with pytest
       run: |
         poetry run pytest

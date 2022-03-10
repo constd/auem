@@ -2,48 +2,38 @@
 name = "auem"
 version = "0.1.0"
 description = "Module for exploring audio embeddings"
-authors = ["Your Name <you@example.com>"]
+authors = ["Konstantinos Dimitriou", "Christopher Jacoby"]
 
 [tool.poetry.dependencies]
-python = "^3.7"
-hydra-core = "^0.11"
-torch = "^1.0.2"
-numpy = "^1.18.2"
-pandas = "^1.0.3"
-scikit-learn = "^0.22.2"
-torchvision = "^0.5.0"
-python-dotenv = "^0.12.0"
-torchaudio = "^0.4.0"
-jinja2 = "^2.11.1"
-click = "^7.1.1"
-tqdm = "^4.45.0"
-soundfile = "^0.10.3"
-librosa = "^0.7.2"
-gitpython = "^3.1.1"
+python = "3.9"
+poethepoet = "^0.13.1"
+hydra-core = "^1.1.1"
+pytorch-lightning = "^1.5.10"
+nnAudio = "^0.3.1"
 pescador = "^2.1.0"
+GitPython = "^3.1.27"
+aim = "^3.7.2"
+pandas = "^1.4.1"
+librosa = "^0.9.1"
+torchmetrics = "^0.7.2"
+
+[tool.poe.tasks]
+## PyTorch with CUDA 11.3. If PyTorch is imported first, importing Tensorflow will detect CUDA + cuDNN bundled with PyTorch
+## Run with the command "poe force-cuda11"
+## See https://github.com/python-poetry/poetry/issues/2543
+force-cuda11 = "pip install torch==1.10.2+cu113 torchvision==0.11.3+cu113 torchaudio==0.10.2+cu113 -f https://download.pytorch.org/whl/torch_stable.html"
+force-nocuda = "pip install torch==1.10.2 torchvision==0.11.3 torchaudio==0.10.2 -f https://download.pytorch.org/whl/torch_stable.html"
 
 [tool.poetry.dev-dependencies]
-pytest = "^5.4.1"
+mypy = "^0.931"
+isort = "^5.10.1"
+pre-commit = "^2.17.0"
+black = "^22.1.0"
+pytest = "^7.0.1"
+ipython = "^8.1.1"
+jupyter = "^1.0.0"
 
-[tool.isort]
-multi_line_output = 3
-include_trailing_comma = true
-force_grid_wrap = 0
-use_parentheses = true
-line_length = 88
-known_third_party = [
-    "click",
-    "hydra-core",
-    "torch",
-    "numpy",
-    "pandas",
-    "scikit-learn",
-    "torchvision",
-    "torchaudio",
-    "python-dotenv",
-]
+
 [build-system]
-requires = ["poetry>=0.12"]
-build-backend = "poetry.masonry.api"
-
-
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
