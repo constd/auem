@@ -54,11 +54,10 @@ jobs:
     - name: Install pip requirements
       run: poetry install --no-interaction --no-dev
       if: steps.cache.outputs.cache-hit != 'true'
-    - name: Install torch without cuda
+    - name: Install torch with cuda
       run: |
-        poe force-nocuda
+        poe force-cuda11
       if: steps.cache.outputs.cache-hit != 'true'
-
     - name: Test with pytest
       run: |
         poetry run pytest
