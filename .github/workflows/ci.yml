@@ -17,6 +17,7 @@ jobs:
           - os: ubuntu-latest
             label: linux-64
             prefix: /usr/share/miniconda3/envs/auem
+            prefix_poetry: /usr/share/miniconda3/envs/
     name: ${{ matrix.label }}
     runs-on: ${{ matrix.os }}
     defaults:
@@ -48,7 +49,7 @@ jobs:
         version: latest
         virtualenvs-create: false
         virtualenvs-in-project: false
-        virtualenvs-path: ${{ matrix.prefix }}
+        virtualenvs-path: ${{ matrix.prefix_poetry }}
         installer-parallel: true
       if: steps.cache.outputs.cache-hit != 'true'
     - name: Install pip requirements
