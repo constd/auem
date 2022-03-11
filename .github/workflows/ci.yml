@@ -52,12 +52,16 @@ jobs:
         installer-parallel: true
       if: steps.cache.outputs.cache-hit != 'true'
     - name: Install pip requirements
-      run: poetry install --no-interaction --no-dev
+      run: |
+        conda activate auem
+        poetry install --no-interaction --no-dev
       if: steps.cache.outputs.cache-hit != 'true'
     - name: Install torch with cuda
       run: |
+        conda activate auem
         poe force-cuda11
       if: steps.cache.outputs.cache-hit != 'true'
     - name: Test with pytest
       run: |
+        conda activate auem
         poetry run pytest

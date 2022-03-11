@@ -22,6 +22,7 @@ pexpect = "^4.8.0"
 platformdirs = "^2.5.1"
 ptyprocess = "^0.7.0"
 virtualenv = "^20.13.3"
+setuptools = "^59.5.0"
 
 [tool.poe.tasks]
 ## PyTorch with CUDA 11.3. If PyTorch is imported first, importing Tensorflow will detect CUDA + cuDNN bundled with PyTorch
