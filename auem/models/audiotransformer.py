@@ -146,7 +146,7 @@ class SimpleTransformerEncDecClassifier(AuemClassifierBase):
         super().__init__(
             child_embedding_size=child_embedding_size,
             num_classes=10,
-            out_nonlinearity="log_softmax"
+            out_nonlinearity="log_softmax",
         )
         self.transformer = AudioTransformerEncDec(
             d_model=child_embedding_size,
@@ -186,7 +186,7 @@ class SimpleTransformerEncoderClassifier(AuemClassifierBase):
         super().__init__(
             child_embedding_size=child_embedding_size,
             num_classes=num_classes,
-            out_nonlinearity=out_nonlinearity
+            out_nonlinearity=out_nonlinearity,
         )
         self.transformer = AudioTransformerEncoder(
             d_model=child_embedding_size,
@@ -203,7 +203,9 @@ class SimpleTransformerEncoderClassifier(AuemClassifierBase):
         return out
 
     def forward(self, src, src_mask=None):
-        src = torch.cat([torch.ones(src.size(0), 1, src.size(2)).to(src.device), src], dim=1)
+        src = torch.cat(
+            [torch.ones(src.size(0), 1, src.size(2)).to(src.device), src], dim=1
+        )
         out = self.get_embedding(src=src, src_mask=src_mask)
         out = self.class_layer(out[:, 0])
         return out
