@@ -16,6 +16,12 @@ aim = "^3.7.2"
 pandas = "^1.4.1"
 librosa = "^0.9.1"
 torchmetrics = "^0.7.2"
+webencodings = "^0.5.1"
+distlib = "^0.3.4"
+pexpect = "^4.8.0"
+platformdirs = "^2.5.1"
+ptyprocess = "^0.7.0"
+virtualenv = "^20.13.3"
 
 [tool.poe.tasks]
 ## PyTorch with CUDA 11.3. If PyTorch is imported first, importing Tensorflow will detect CUDA + cuDNN bundled with PyTorch
