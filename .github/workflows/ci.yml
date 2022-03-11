@@ -37,10 +37,10 @@ jobs:
     - uses: actions/cache@v2
       with:
         path: ${{ matrix.prefix }}
-        key: ${{ matrix.label }}-conda-${{ hashFiles('environment.yml') }}-${{ hashFiles('pyproject.toml') }}-${{ env.DATE }}-${{ env.CACHE_NUMBER }}
+        key: ${{ matrix.label }}-conda-${{ hashFiles('environment.yaml') }}-${{ hashFiles('pyproject.toml') }}-${{ env.DATE }}-${{ env.CACHE_NUMBER }}
       id: cache
     - name: Update environment
-      run: mamba env update -n auem -f environment.yml
+      run: mamba env update -n auem -f environment.yaml
       if: steps.cache.outputs.cache-hit != 'true'
     - name: Install and configure Poetry
       uses: snok/install-poetry@v1
