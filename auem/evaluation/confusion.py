@@ -68,7 +68,7 @@ def log_confusion_matrix(
     class_names: List[str] = None,
     **kwargs
 ) -> None:
-   """Compute the image of a confusion matrix, and save it to disk for tensorboard
+    """Compute the image of a confusion matrix, and save it to disk for tensorboard
 
     Use as a callback.
     """
