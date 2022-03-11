@@ -55,7 +55,7 @@ jobs:
     - name: Install pip requirements
       run: |
         conda activate auem
-        poetry install --no-interaction --no-dev
+        poetry install --no-interaction
       if: steps.cache.outputs.cache-hit != 'true'
     - name: Install torch with cuda
       run: |
