@@ -15,7 +15,10 @@ def test_resent_basicblock():
     n_blocks = 3
 
     resnet_block = auem_resnet.resnet_block(
-        auem_resnet.BasicBlock, n_planes, n_blocks, in_planes,
+        auem_resnet.BasicBlock,
+        n_planes,
+        n_blocks,
+        in_planes,
     )
     assert len(resnet_block) == n_blocks
 

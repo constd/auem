@@ -164,8 +164,11 @@ class AudiosetAnnotationReaderV2:
             "ytid": item[0],
             "start_seconds": float(item[1].strip()),
             "end_seconds": float(item[2].strip()),
-            "classes": [self.classes.index(k) for k in item[3].split(",")
-                        if k in self._class_set],
+            "classes": [
+                self.classes.index(k)
+                for k in item[3].split(",")
+                if k in self._class_set
+            ],
         }
 
     def __next__(self):
@@ -246,7 +249,7 @@ class AudiosetDataset(torch.utils.data.Dataset):
         audioset_annotations: Union[str, Path],
         transforms: Union[torch.nn.Module, torchvision.transforms.Compose] = None,
         audio_cache_dir: Union[str, Path] = None,
-        filter_classes: Optional[List[str]] = None
+        filter_classes: Optional[List[str]] = None,
     ):
         self.transforms = transforms
         with open(ontology, "r") as f:

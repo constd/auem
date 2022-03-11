@@ -1,8 +1,9 @@
 from functools import partial
-from sklearn.metrics import log_loss
+from typing import Any, Dict, List, Optional, Union
+
 import numpy as np
 import pandas as pd
-from typing import Any, Dict, List, Optional, Union
+from sklearn.metrics import log_loss
 
 
 def _highlight_max(s):

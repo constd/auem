@@ -1,4 +1,4 @@
-"""Train a 'classification' model using an IterableDataset."""
+"""Train a classification model using an IterableDataset."""
 import logging
 import os
 

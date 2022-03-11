@@ -17,7 +17,8 @@ class FeatureCache:
     """
 
     def __init__(
-        self, cache_dir: Union[str, pathlib.Path] = None,
+        self,
+        cache_dir: Union[str, pathlib.Path] = None,
     ):
         self.cache_dir = cache_dir if cache_dir else tempfile.TemporaryDirectory()
         self.cache_dir = pathlib.Path(self.cache_dir)

@@ -12,15 +12,22 @@ __all__ = ["DCASE2020Task1aDataset"]
 
 class DCASE2020Task1aDataset(torch.utils.data.Dataset):
     SR = 44100
+    TRAIN_SEC = 3
 
     def __init__(
         self,
         split_df_path: Union[str, pathlib.Path],
         metadata_df_path: pd.DataFrame,
         data_root: pathlib.Path,
+        fold: str = "fold1_train.csv",
         transforms: Union[torchvision.transforms.Compose, torch.nn.Module] = None,
     ):
-        self.data = pd.read_csv(split_df_path, sep="\t", header=0)
+        self.data = pd.read_csv(f"{split_df_path}{fold}", sep="\t", header=0)
+        if "train" in fold:
+            df = pd.concat([self.data] * 3, ignore_index=True)
+            df["chunk"] = df.groupby(["filename", "scene_label"]).cumcount() + 1
+            self.data = df
+        self.fold = fold
         self.metadata = pd.read_csv(metadata_df_path)
         self.data_root = pathlib.Path(data_root)
         self.transforms = transforms
@@ -43,10 +50,10 @@ class DCASE2020Task1aDataset(torch.utils.data.Dataset):
         scene_label = self.l2c[row["scene_label"]]
         # row_meta = self.metadata[self.metadata["filename"] == example_fn]
         audio, sr = torchaudio.load(self.data_root / example_fn, normalization=True)
-
+        if "train" in self.fold:
+            audio = audio[:, row["chunk"] * sr : (row["chunk"] + self.TRAIN_SEC) * sr]
         data = deepcopy(audio)
         data = torchaudio.transforms.Resample(orig_freq=sr, new_freq=self.SR)(data)
-        # data = torchaudio.transforms.MelSpectrogram(sr)(data)
         if self.transforms:
             data = self.transforms(data)
         sample = {

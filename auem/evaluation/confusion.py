@@ -19,7 +19,7 @@ def plot_confusion_matrix(
 ):
     """Returns a matplotlib figure containing the plotted confusion matrix.
 
-    Parameters 
+    Parameters
     ----------
     y_true (array, shape = [n,])
 
@@ -68,9 +68,9 @@ def log_confusion_matrix(
     class_names: List[str] = None,
     **kwargs
 ) -> None:
-    """Compute the image of a confusion matrix, and save it to disk for tensorboard.
-    
-    Use as a callback. 
+   """Compute the image of a confusion matrix, and save it to disk for tensorboard
+
+    Use as a callback.
     """
     figure = plot_confusion_matrix(y_true, y_pred, class_names)
     summary_writer.add_figure("cm", figure, **kwargs)
