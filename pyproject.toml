@@ -21,6 +21,11 @@ dependencies = [
 ]
 
 [dependency-groups]
+dev = [
+    "pre-commit>=4.3.0",
+    "auem[lint]",
+    "auem[test]"
+]
 lint = [
     "pyrefly>=0.32.0",
     "ruff>=0.13.0",
