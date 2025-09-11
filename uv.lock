@@ -2,6 +2,14 @@ version = 1
 revision = 3
 requires-python = ">=3.12"
 
+[manifest]
+members = [
+    "auem",
+    "core",
+    "foundation",
+    "generation",
+]
+
 [[package]]
 name = "antlr4-python3-runtime"
 version = "4.9.3"
@@ -13,6 +21,9 @@ name = "auem"
 version = "0.0.1"
 source = { editable = "." }
 dependencies = [
+    { name = "core" },
+    { name = "foundation" },
+    { name = "generation" },
     { name = "hydra-core" },
     { name = "hydra-zen" },
     { name = "torch" },
@@ -39,6 +50,9 @@ test = [
 
 [package.metadata]
 requires-dist = [
+    { name = "core", editable = "packages/core" },
+    { name = "foundation", editable = "packages/foundation" },
+    { name = "generation", editable = "packages/generation" },
     { name = "hydra-core", specifier = ">=1.3.2" },
     { name = "hydra-zen", specifier = ">=0.15.0" },
     { name = "torch", specifier = ">=2.8.0" },
@@ -80,6 +94,27 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/d8/53/6f443c9a4a8358a93a6792e2acffb9d9d5cb0a5cfd8802644b7b1c9a02e4/colorama-0.4.6.tar.gz", hash = "sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44", size = 27697, upload-time = "2022-10-25T02:36:22.414Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d1/d6/3965ed04c63042e047cb6a3e6ed1a63a35087b6a609aa3a15ed8ac56c221/colorama-0.4.6-py2.py3-none-any.whl", hash = "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6", size = 25335, upload-time = "2022-10-25T02:36:20.889Z" },
+]
+
+[[package]]
+name = "core"
+version = "0.0.1"
+source = { editable = "packages/core" }
+dependencies = [
+    { name = "hydra-core" },
+    { name = "hydra-zen" },
+    { name = "torch" },
+    { name = "torchaudio" },
+    { name = "torchvision" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "hydra-core", specifier = ">=1.3.2" },
+    { name = "hydra-zen", specifier = ">=0.15.0" },
+    { name = "torch", specifier = ">=2.8.0" },
+    { name = "torchaudio", specifier = ">=2.8.0" },
+    { name = "torchvision", specifier = ">=0.23.0" },
 ]
 
 [[package]]
@@ -165,12 +200,54 @@ wheels = [
 ]
 
 [[package]]
+name = "foundation"
+version = "0.0.1"
+source = { editable = "packages/foundation" }
+dependencies = [
+    { name = "hydra-core" },
+    { name = "hydra-zen" },
+    { name = "torch" },
+    { name = "torchaudio" },
+    { name = "torchvision" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "hydra-core", specifier = ">=1.3.2" },
+    { name = "hydra-zen", specifier = ">=0.15.0" },
+    { name = "torch", specifier = ">=2.8.0" },
+    { name = "torchaudio", specifier = ">=2.8.0" },
+    { name = "torchvision", specifier = ">=0.23.0" },
+]
+
+[[package]]
 name = "fsspec"
 version = "2025.9.0"
 source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/de/e0/bab50af11c2d75c9c4a2a26a5254573c0bd97cea152254401510950486fa/fsspec-2025.9.0.tar.gz", hash = "sha256:19fd429483d25d28b65ec68f9f4adc16c17ea2c7c7bf54ec61360d478fb19c19", size = 304847, upload-time = "2025-09-02T19:10:49.215Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/47/71/70db47e4f6ce3e5c37a607355f80da8860a33226be640226ac52cb05ef2e/fsspec-2025.9.0-py3-none-any.whl", hash = "sha256:530dc2a2af60a414a832059574df4a6e10cce927f6f4a78209390fe38955cfb7", size = 199289, upload-time = "2025-09-02T19:10:47.708Z" },
+]
+
+[[package]]
+name = "generation"
+version = "0.0.1"
+source = { editable = "packages/generation" }
+dependencies = [
+    { name = "hydra-core" },
+    { name = "hydra-zen" },
+    { name = "torch" },
+    { name = "torchaudio" },
+    { name = "torchvision" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "hydra-core", specifier = ">=1.3.2" },
+    { name = "hydra-zen", specifier = ">=0.15.0" },
+    { name = "torch", specifier = ">=2.8.0" },
+    { name = "torchaudio", specifier = ">=2.8.0" },
+    { name = "torchvision", specifier = ">=0.23.0" },
 ]
 
 [[package]]

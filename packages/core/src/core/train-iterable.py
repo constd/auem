@@ -1,15 +1,15 @@
 """Train a classification model using an IterableDataset."""
+
 import logging
 import os
 
 import hydra
 import torch
+from auem.train import dataloaders, datasets, training_setup
 from omegaconf import DictConfig
 from torch.cuda import is_available as is_cuda_available
 from torch.utils import tensorboard as tb
 from tqdm import tqdm
-
-from auem.train import dataloaders, datasets, training_setup
 
 # import auem.evaluation.confusion as confusion
 
@@ -48,7 +48,7 @@ def train(cfg: DictConfig) -> None:
             scheduler.step()
 
             writer.add_scalar(
-                f"loss/training/step",
+                "loss/training/step",
                 loss.item(),
                 global_step=(global_step_num + batch_num),
             )
@@ -56,7 +56,7 @@ def train(cfg: DictConfig) -> None:
 
         global_step_num += batch_num
         mean_train_loss = losses / batch_num
-        writer.add_scalar(f"loss/training/epoch", mean_train_loss, global_step=epoch)
+        writer.add_scalar("loss/training/epoch", mean_train_loss, global_step=epoch)
         # writer.add_scalars(f"accuracy/training", accuracies, global_step=epoch)
         # evaluation loop
         if cfg.eval:
@@ -94,10 +94,10 @@ def train(cfg: DictConfig) -> None:
                 mean_val_loss = losses / batch_num
                 mean_val_acc = n_correct / n_total
                 writer.add_scalar(
-                    f"loss/validation/epoch", mean_val_loss, global_step=epoch
+                    "loss/validation/epoch", mean_val_loss, global_step=epoch
                 )
                 writer.add_scalar(
-                    f"accuracy/validation/epoch", mean_val_acc, global_step=epoch
+                    "accuracy/validation/epoch", mean_val_acc, global_step=epoch
                 )
                 # if (
                 #     cfg.checkpoint.embeddings.enabled
