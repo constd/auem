@@ -2,9 +2,6 @@
 requires = ["uv_build>=0.8.17,<0.9.0"]
 build-backend = "uv_build"
 
-[tool.uv.build-backend]
-module-name = ["auem.core", "auem.experiment", "auem.generation"]
-
 [project]
 name = "auem"
 version = "0.0.1"
@@ -13,12 +10,23 @@ authors = [{name="Constantinos Dimitriou"}, {name="Christopher Jacoby"}]
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "core",
+    "foundation",
+    "generation",
     "hydra-core>=1.3.2",
     "hydra-zen>=0.15.0",
     "torch>=2.8.0",
     "torchaudio>=2.8.0",
     "torchvision>=0.23.0",
 ]
+
+[tool.uv.sources]
+core = { workspace = true }
+foundation = { workspace = true }
+generation = { workspace = true }
+
+[tool.uv.workspace]
+members = ["packages/core", "packages/foundation", "packages/generation"]
 
 [dependency-groups]
 dev = [

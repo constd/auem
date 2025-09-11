@@ -1,0 +1,18 @@
+[build-system]
+requires = ["uv_build>=0.8.17,<0.9.0"]
+build-backend = "uv_build"
+
+[project]
+name = "core"
+version = "0.0.1"
+description = "Module for creating audio embeddings"
+authors = [{name="Constantinos Dimitriou"}, {name="Christopher Jacoby"}]
+# readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "hydra-core>=1.3.2",
+    "hydra-zen>=0.15.0",
+    "torch>=2.8.0",
+    "torchaudio>=2.8.0",
+    "torchvision>=0.23.0",
+]
