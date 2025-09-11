@@ -1,4 +1,5 @@
 """Tests simplecnn model."""
+
 import pytest
 import torch
 

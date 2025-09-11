@@ -1,4 +1,5 @@
 """Base classes for Auem Models."""
+
 from abc import abstractmethod
 from typing import Optional
 

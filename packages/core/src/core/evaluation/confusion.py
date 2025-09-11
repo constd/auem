@@ -1,7 +1,5 @@
-import datetime
 import itertools
-import pathlib
-from typing import List, Optional, Union
+from typing import List, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,7 +13,7 @@ def plot_confusion_matrix(
     y_pred: np.ndarray = None,
     cm: np.ndarray = None,
     class_names: Optional[str] = None,
-    figsize=(8, 8)
+    figsize=(8, 8),
 ):
     """Returns a matplotlib figure containing the plotted confusion matrix.
 
@@ -66,7 +64,7 @@ def log_confusion_matrix(
     y_true: np.ndarray,
     y_pred: np.ndarray,
     class_names: List[str] = None,
-    **kwargs
+    **kwargs,
 ) -> None:
     """Compute the image of a confusion matrix, and save it to disk for tensorboard
 

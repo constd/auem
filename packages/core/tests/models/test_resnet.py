@@ -1,4 +1,5 @@
 """Test resnet models."""
+
 # noqa: D400, D103
 import pytest
 import torch

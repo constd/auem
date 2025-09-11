@@ -5,7 +5,7 @@ dataset:
     val: /home/const/Projects/data/audioset/datasplits/balanced_train_segments-val-dev-2k.csv
   params:
     audioset_path: /home/const/Projects/data/audioset/yt_audio/balanced_train/
-    ontology: /home/const/Projects/data/audioset/ontology/ontology.json 
+    ontology: /home/const/Projects/data/audioset/ontology/ontology.json
     audio_cache_dir: /home/const/Projects/data/audioset/feature_cache/
     streamer_settings:
       n_frames: 10

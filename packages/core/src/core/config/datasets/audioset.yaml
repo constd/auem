@@ -5,4 +5,4 @@ dataset:
     val: /home/const/Projects/data/audioset/datasplits/balanced_train_segments-val-full.csv
   params:
     audioset_path: /home/const/Projects/data/audioset/yt_audio/balanced_train/
-    ontology: /home/const/Projects/data/audioset/ontology/ontology.json 
+    ontology: /home/const/Projects/data/audioset/ontology/ontology.json

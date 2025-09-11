@@ -1,4 +1,5 @@
 """A simple, configurable CNN model."""
+
 from collections.abc import Iterable
 
 import numpy as np

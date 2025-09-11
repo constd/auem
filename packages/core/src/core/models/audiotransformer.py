@@ -1,4 +1,5 @@
 """A simple, configurable Transformer encoder-decoder model."""
+
 from typing import Tuple
 
 import torch
@@ -141,7 +142,7 @@ class SimpleTransformerEncDecClassifier(AuemClassifierBase):
         dim_feedforward=512,
         dropout=0.2,
         activation="gelu",
-        **kwargs
+        **kwargs,
     ):
         super().__init__(
             child_embedding_size=child_embedding_size,
@@ -181,7 +182,7 @@ class SimpleTransformerEncoderClassifier(AuemClassifierBase):
         dim_feedforward=512,
         dropout=0.2,
         activation="gelu",
-        **kwargs
+        **kwargs,
     ):
         super().__init__(
             child_embedding_size=child_embedding_size,

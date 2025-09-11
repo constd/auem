@@ -1,8 +1,9 @@
 """Resnet models."""
+
 import torch.nn as nn
 import torchvision.models.resnet as torch_resnet
 from torchvision.models.resnet import Bottleneck  # noqa: F401
-from torchvision.models.resnet import BasicBlock, conv1x1, conv3x3
+from torchvision.models.resnet import BasicBlock, conv1x1
 
 
 def resnet_block(

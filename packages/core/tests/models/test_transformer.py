@@ -1,4 +1,5 @@
 """Tests transformer classifier model."""
+
 import pytest
 import torch
 

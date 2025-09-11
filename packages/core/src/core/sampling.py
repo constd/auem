@@ -1,4 +1,5 @@
 """Script to test and benchmark the Dataset sampling used in `train.py`."""
+
 import logging
 import time
 from collections import defaultdict
