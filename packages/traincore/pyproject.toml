@@ -3,7 +3,7 @@ requires = ["uv_build>=0.8.17,<0.9.0"]
 build-backend = "uv_build"
 
 [project]
-name = "core"
+name = "traincore"
 version = "0.0.1"
 description = "Module for creating audio embeddings"
 authors = [{name="Constantinos Dimitriou"}, {name="Christopher Jacoby"}]
