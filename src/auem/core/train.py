@@ -1,4 +1,5 @@
 """Train a pytorch model using a pytorch Dataset with a known length."""
+
 import logging
 import os
 from math import ceil
@@ -119,11 +120,11 @@ def train(cfg: DictConfig) -> None:
             optimizer.step()
             scheduler.step()
             writer.add_scalar(
-                f"loss/training/batch",
+                "loss/training/batch",
                 loss.item(),
                 global_step=batch_num,
             )
-        writer.add_scalar(f"loss/epoch/training", losses / batch_num, global_step=epoch)
+        writer.add_scalar("loss/epoch/training", losses / batch_num, global_step=epoch)
         # writer.add_scalars(f"accuracy/training", accuracies, global_step=epoch)
         # evaluation loop
         if cfg.eval:
@@ -147,7 +148,7 @@ def train(cfg: DictConfig) -> None:
                         embeddings.extend(output.to("cpu").tolist())
                         ys.extend([ds_valid.c2l[x] for x in y.tolist()])
                 writer.add_scalar(
-                    f"loss/epoch/validation", losses / len(batch), global_step=epoch
+                    "loss/epoch/validation", losses / len(batch), global_step=epoch
                 )
                 # writer.add_scalars(
                 # f"accuracy/validation", accuracies, global_step=epoch)
