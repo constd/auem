@@ -5,64 +5,61 @@ name: GitHub CI-CD
 
 on:
   push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+    branches:
+      - master
+    tags:
+      - master
+  pull_request: {}
 
 jobs:
-  setup:
+  test-python:
+    name: test ${{ matrix.python-version }}
+
     strategy:
+      fail-fast: false
       matrix:
-        include:
-          - os: ubuntu-latest
-            label: linux-64
-            prefix: /usr/share/miniconda3/envs/auem
-            prefix_poetry: /usr/share/miniconda3/envs/
-    name: ${{ matrix.label }}
-    runs-on: ${{ matrix.os }}
-    defaults:
-      run:
-        shell: bash -l {0}
+        python-version:
+          - "3.11"
+          - "3.12"
+          - "3.13"
+          - "3.13t"
+
+    runs-on: ubuntu-latest
+
+    # TODO: get test suite stable with free-threaded python
+    continue-on-error: ${{ endsWith(matrix.python-version, 't') }}
+
     steps:
-    - uses: actions/checkout@v2
-    - uses: conda-incubator/setup-miniconda@v2
-      with:
-        python-version: 3.9
-        mamba-version: "*"
-        use-mamba: true
-        channels: conda-forge,defaults
-        channel-priority: true
-        activate-environment: auem
-    - name: Set cache date
-      run: echo "DATE=$(date +'%Y%m%d')" >> $GITHUB_ENV
-    - uses: actions/cache@v2
-      with:
-        path: ${{ matrix.prefix }}
-        key: ${{ matrix.label }}-conda-${{ hashFiles('environment.yaml') }}-${{ hashFiles('pyproject.toml') }}-${{ env.DATE }}-${{ env.CACHE_NUMBER }}
-      id: cache
-    - name: Update environment
-      run: mamba env update -n auem -f environment.yaml
-      if: steps.cache.outputs.cache-hit != 'true'
-    - name: Install and configure Poetry
-      uses: snok/install-poetry@v1
-      with:
-        version: latest
-        virtualenvs-create: false
-        virtualenvs-in-project: false
-        virtualenvs-path: ${{ matrix.prefix_poetry }}
-        installer-parallel: true
-      if: steps.cache.outputs.cache-hit != 'true'
-    - name: Install pip requirements
-      run: |
-        conda activate auem
-        poetry install --no-interaction
-      if: steps.cache.outputs.cache-hit != 'true'
-    - name: Install torch with cuda
-      run: |
-        conda activate auem
-        poe force-cuda11
-      if: steps.cache.outputs.cache-hit != 'true'
-    - name: Test with pytest
-      run: |
-        conda activate auem
-        poetry run pytest
+      - uses: actions/checkout@v5
+
+      - name: install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: install deps
+        run: make build-dev
+        env:
+          LIBTORCH_USE_PYTORCH: 1
+
+      - name: run python tests
+        run: make test
+        env:
+          HYPOTHESIS_PROFILE: slow
+          PYTEST_ADDOPTS: ${{ endsWith(matrix.python-version, 't') && '--parallel-threads=2' || '' }}
+
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: install uv
+        uses: astral-sh/setup-uv@v6
+
+      - run: uv pip freeze
+
+      - name: lint python
+        run: make python-lint
+        env:
+          LIBTORCH_USE_PYTORCH: 1
