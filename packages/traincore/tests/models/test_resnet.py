@@ -4,7 +4,7 @@
 import pytest
 import torch
 
-import auem.models.resnet as auem_resnet
+import traincore.models.resnet as auem_resnet
 
 
 def test_resent_basicblock():

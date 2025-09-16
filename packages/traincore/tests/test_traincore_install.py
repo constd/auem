@@ -2,7 +2,10 @@
 
 
 def test_can_import_base():
-    pass
+    try:
+        import traincore  # noqa
+    except ImportError:
+        raise ImportError("Failed to import CQTResNet")
 
 
 def test_can_import_datasets():

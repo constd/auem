@@ -372,7 +372,7 @@ def _gen_frames(
     sample_data = audioset_dataset[annotation_idx]
     if sample_data is not None:
         # sample['X'] is the mel spectrum
-        _, n_features, n_available_frames = sample_data["X"].shape
+        _, _n_features, n_available_frames = sample_data["X"].shape
 
         # number of frames available
         frame_index = np.arange(n_available_frames - (n_frames + n_target_frames))
