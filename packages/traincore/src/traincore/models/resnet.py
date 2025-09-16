@@ -5,6 +5,7 @@ import torchvision.models.resnet as torch_resnet
 from torchvision.models.resnet import BasicBlock, Bottleneck, conv1x1
 
 
+
 def resnet_block(
     block_type: nn.Module,
     planes,

@@ -86,3 +86,4 @@
 
 #         assert result_df.iloc[-1].name == "Average"
 #         assert result_df.columns[-1] == "Log Loss"
+
