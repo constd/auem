@@ -2,8 +2,8 @@
 
 import torch.nn as nn
 import torchvision.models.resnet as torch_resnet
-from torchvision.models.resnet import Bottleneck  # noqa: F401
-from torchvision.models.resnet import BasicBlock, conv1x1
+from torchvision.models.resnet import BasicBlock, Bottleneck, conv1x1
+
 
 
 def resnet_block(
@@ -61,6 +61,8 @@ def resnet_block(
     return nn.Sequential(*layers)
 
 
+# @model_store(name="spectrogram_resnet", block=2,)
+# @model_store(name="cqt_resnet", block=3)
 class SpectrogramResNet(torch_resnet.ResNet):
     """Copied with slight variation from the original pytorch ResNet.
 
