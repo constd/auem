@@ -1,2 +1,0 @@
-criterion:
-  class: torch.nn.CrossEntropyLoss
