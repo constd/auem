@@ -16,7 +16,6 @@ import numpy as np
 import pescador
 import torch
 import torchvision
-
 from auem.data.caching import FeatureCache
 
 logger = logging.getLogger(__name__)
@@ -136,12 +135,12 @@ class AudiosetAnnotationReaderV2:
         """Load the entire annotations file, skipping any "comment" lines."""
         self._annotations = []
         with open(self.annotation_path, "r") as fh:
-            for l in csv.reader(
+            for line in csv.reader(
                 fh, quotechar='"', delimiter=",", skipinitialspace=True
             ):
-                if not l[0].startswith("#"):
-                    if self._contains_class(l):
-                        self._annotations.append(l)
+                if not line[0].startswith("#"):
+                    if self._contains_class(line):
+                        self._annotations.append(line)
 
     def _contains_class(self, line: str) -> bool:
         line_classes = {x for x in line[3].split(",")}

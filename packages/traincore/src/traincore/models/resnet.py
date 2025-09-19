@@ -2,7 +2,7 @@ import torch.nn as nn
 import torchvision.models.resnet as torch_resnet
 from torchvision.models.resnet import BasicBlock, Bottleneck, conv1x1
 
-from traincore.config_stores.models.models import model_store
+from traincore.config_stores.models import model_store
 
 
 def resnet_block(

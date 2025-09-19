@@ -49,9 +49,9 @@ def split(source_dataset_path: str, dest_datasets: List[str], writedir: str):
     logger.info("Loading source_dataset_path")
     source_dataset = []
     with open(source_dataset_path, "r") as fh:
-        for l in csv.reader(fh, quotechar='"', delimiter=",", skipinitialspace=True):
-            if not l[0].startswith("#"):
-                source_dataset.append(l)
+        for line in csv.reader(fh, quotechar='"', delimiter=",", skipinitialspace=True):
+            if not line[0].startswith("#"):
+                source_dataset.append(line)
     source_len = len(source_dataset)
     logger.info(f"Loading source_dataset_path: len={source_len}")
 
