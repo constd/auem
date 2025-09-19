@@ -1,3 +1,3 @@
-from .istft import ISTFTDecoder
+from .istft import iSTFTDecoder
 
-__all__ = ["ISTFTDecoder"]
+__all__ = ["iSTFTDecoder"]

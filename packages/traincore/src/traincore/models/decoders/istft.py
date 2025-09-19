@@ -1,14 +1,14 @@
 import torch
-from einops import reshape
-from jaxtyping import Array, Float
+from einops import rearrange
+from jaxtyping import Float
 from torch import Tensor, istft
 from torch.nn import Module, Parameter
 
 from traincore.config_stores.model_decoders import model_decoders_store
 
 
-@model_decoders_store.register(name="istft")
-class STFTDecoder(Module):
+@model_decoders_store(name="istft")
+class iSTFTDecoder(Module):
     def __init__(
         self,
         n_fft=2048,
@@ -26,15 +26,17 @@ class STFTDecoder(Module):
         self.window = window
 
         self.window = Parameter(
-            getattr(torch, self.window, "hann_window")(n_fft),
+            getattr(torch, self.window, "hann_window")(n_fft),  # ty: ignore[call-non-callable]
             requires_grad=False,
         )
 
     def forward(
-        self, X: Float[Array, "batch channel frequency time"], length: int | None = None
-    ) -> Float[Array, "batch channel time"]:
+        self,
+        X: Float[Tensor, "batch channel frequency time"],
+        length: int | None = None,
+    ) -> Float[Tensor, "batch channel time"]:
         b, c, f, t = X.size()
-        X_ = reshape(
+        X_ = rearrange(
             X, "batch channel frequency time -> (batch channel) frequency time"
         )
         x_: Tensor = istft(
@@ -47,7 +49,7 @@ class STFTDecoder(Module):
             onesided=True,
             length=length,
         )
-        x = reshape(
+        x = rearrange(
             x_, "(batch channel) time -> batch channel time", batch=b, channels=c
         )
         return x

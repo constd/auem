@@ -1,13 +1,13 @@
 import torch
-from einops import reshape
-from jaxtyping import Array, Float
-from torch import stft
+from einops import rearrange
+from jaxtyping import Float
+from torch import Tensor, stft
 from torch.nn import Module
 
 from traincore.config_stores.model_encoders import model_encoders_store
 
 
-@model_encoders_store.register("stft")
+@model_encoders_store(name="stft")
 class STFTEncoder(Module):
     def __init__(
         self,
@@ -25,11 +25,11 @@ class STFTEncoder(Module):
         self.window = getattr(torch, "hann_window")(self.n_fft)
 
     def forward(
-        self, x: Float[Array, "batch channel time"]
-    ) -> Float[Array, "batch channel frequency time"]:
+        self, x: Float[Tensor, "batch channel time"]
+    ) -> Float[Tensor, "batch channel frequency time"]:
         b, c, t = x.size()
         # simplify shape
-        x_ = reshape(x, "b c t -> (b c) t")
+        x_ = rearrange(x, "b c t -> (b c) t")
         X_ = stft(
             x_,
             n_fft=self.n_fft,
@@ -42,5 +42,5 @@ class STFTEncoder(Module):
             pad_mode="reflect",
         )
         # get back to the original batch/channels
-        X = reshape(X_, "(b c) f t -> b c f t")
+        X = rearrange(X_, "(b c) f t -> b c f t")
         return torch.view_as_real(X)

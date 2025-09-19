@@ -1,12 +1,13 @@
-from einops import reshape
-from jaxtyping import Array, Float
+from einops import rearrange
+from jaxtyping import Float
+from torch import Tensor
 from torch.nn import Module
 from torchaudio.transforms import MelSpectrogram
 
 from traincore.config_stores.model_encoders import model_encoders_store
 
 
-@model_encoders_store.register("mel")
+@model_encoders_store(name="mel")
 class MelEncoder(Module):
     def __init__(
         self,
@@ -29,9 +30,9 @@ class MelEncoder(Module):
         )
 
     def forward(
-        self, x: Float[Array, "batch channel time"]
-    ) -> Float[Array, "batch channel frequency time"]:
+        self, x: Float[Tensor, "batch channel time"]
+    ) -> Float[Tensor, "batch channel frequency time"]:
         b, c, t = x.size()
-        x_ = reshape(x, "b c t -> (b c) t")
+        x_ = rearrange(x, "b c t -> (b c) t")
         X = self.mel(x_)
-        return reshape(X, "(b c) f t -> b c f t")
+        return rearrange(X, "(b c) f t -> b c f t")

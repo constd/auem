@@ -1,4 +1,4 @@
-from .mel import MelEncoder
+from .melspec import MelEncoder
 from .stft import STFTEncoder
 
 __all__ = [
