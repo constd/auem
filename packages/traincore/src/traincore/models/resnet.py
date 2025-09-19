@@ -1,3 +1,5 @@
+from typing import Callable
+
 import torch.nn as nn
 import torchvision.models.resnet as torch_resnet
 from torchvision.models.resnet import BasicBlock, Bottleneck, conv1x1
@@ -6,16 +8,16 @@ from traincore.config_stores.models import model_store
 
 
 def resnet_block(
-    block_type: nn.Module,
-    planes,
-    blocks,
-    inplanes,
-    stride=1,
-    dilate=False,
-    previous_dilation=1,
-    norm_layer=None,
-    groups=1,
-    base_width=64,
+    block_type: Callable[..., BasicBlock | Bottleneck | nn.Module],
+    planes: int,
+    blocks: int,
+    inplanes: int,
+    stride: int = 1,
+    dilate: bool = False,
+    previous_dilation: int = 1,
+    norm_layer: Callable[..., nn.Module] | None = None,
+    groups: int = 1,
+    base_width: int = 64,
 ):
     """Build a single ResNet block."""
     if norm_layer is None:
@@ -25,11 +27,12 @@ def resnet_block(
     if dilate:
         dilation *= stride
         stride = 1
-    if stride != 1 or inplanes != planes * block_type.expansion:
-        downsample = nn.Sequential(
-            conv1x1(inplanes, planes * block_type.expansion, stride),
-            norm_layer(planes * block_type.expansion),
-        )
+    if getattr(block_type, "expansion", None) is not None:
+        if stride != 1 or inplanes != planes * block_type.expansion:
+            downsample = nn.Sequential(
+                conv1x1(inplanes, planes * block_type.expansion, stride),
+                norm_layer(planes * block_type.expansion),
+            )
 
     layers = []
     layers.append(
