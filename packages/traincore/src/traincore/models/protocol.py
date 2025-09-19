@@ -1,6 +1,6 @@
 """Base classes for Auem Models."""
 
-from typing import Literal, Protocol
+from typing import Literal, Protocol, runtime_checkable
 
 from torch import Tensor
 
@@ -8,6 +8,7 @@ from traincore.models.decoders.protocol import DecoderProtocol
 from traincore.models.encoders.protocol import EncoderProtocol
 
 
+@runtime_checkable
 class AuemModelProtocol(Protocol):
     encoder: EncoderProtocol | None
     decoder: DecoderProtocol | None
