@@ -1,9 +1,8 @@
-"""Resnet models."""
-
 import torch.nn as nn
 import torchvision.models.resnet as torch_resnet
 from torchvision.models.resnet import BasicBlock, Bottleneck, conv1x1
 
+from traincore.config_stores.models.models import model_store
 
 
 def resnet_block(
@@ -61,18 +60,25 @@ def resnet_block(
     return nn.Sequential(*layers)
 
 
-# @model_store(name="spectrogram_resnet", block=2,)
-# @model_store(name="cqt_resnet", block=3)
+@model_store(name="resent18", block=BasicBlock, layers=[2, 2, 2, 2])
+@model_store(name="resent34", block=BasicBlock, layers=[3, 4, 6, 3])
+@model_store(name="resent50", block=Bottleneck, layers=[3, 4, 6, 3])
+@model_store(name="resent101", block=Bottleneck, layers=[3, 4, 23, 3])
+@model_store(name="resent152", block=Bottleneck, layers=[3, 8, 36, 3])
 class SpectrogramResNet(torch_resnet.ResNet):
     """Copied with slight variation from the original pytorch ResNet.
 
     The original assumes 3 input planes, and provides no way to configure it.
     """
 
+    mtype = "e2a"
+
     def __init__(
         self,
-        block,
-        layers,
+        encoder=None,
+        decoder=None,
+        block=BasicBlock,
+        layers=[2, 2, 2, 2],
         num_classes=1000,
         zero_init_residual=False,
         groups=1,
@@ -88,6 +94,8 @@ class SpectrogramResNet(torch_resnet.ResNet):
         we want to change ;(
         """
         nn.Module.__init__(self)
+        self.encoder = encoder
+        self.decoder = decoder
 
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
@@ -142,60 +150,3 @@ class SpectrogramResNet(torch_resnet.ResNet):
                     nn.init.constant_(m.bn3.weight, 0)
                 elif isinstance(m, torch_resnet.BasicBlock):
                     nn.init.constant_(m.bn2.weight, 0)
-
-
-# Had to copy the below to override with SpectrogramResNet
-# removed pretrained and progress.
-def _resnet(arch, block, layers, **kwargs):
-    """Replacementl helper for creating resnet modules from pytorch."""
-    model = SpectrogramResNet(block, layers, **kwargs)
-    # if pretrained:
-    #     state_dict = load_state_dict_from_url(model_urls[arch],
-    #                                           progress=progress)
-    #     model.load_state_dict(state_dict)
-    return model
-
-
-def resnet18(**kwargs):
-    """Build a resnet18."""
-    return _resnet("resnet18", BasicBlock, [2, 2, 2, 2], **kwargs)
-
-
-def resnet34(**kwargs):
-    """Build a resnet34."""
-    return _resnet("resnet34", BasicBlock, [3, 4, 6, 3], **kwargs)
-
-
-def resnet50(**kwargs):
-    """Build a resnet50."""
-    return _resnet("resnet50", Bottleneck, [3, 4, 6, 3], **kwargs)
-
-
-def resnet101(**kwargs):
-    """Build a resnet101."""
-    return _resnet("resnet101", Bottleneck, [3, 4, 23, 3], **kwargs)
-
-
-def resnet152(**kwargs):
-    """Build a resnet152."""
-    return _resnet("resnet152", Bottleneck, [3, 8, 36, 3], **kwargs)
-
-
-arch_map = {
-    "resnet18": resnet18,
-    "resnet34": resnet34,
-    "resnet50": resnet50,
-    "resnet101": resnet101,
-    "resnet152": resnet152,
-}
-
-
-def from_arch(arch_name, **kwargs):
-    """Get a model from it's arch name."""
-    model_fn = arch_map[arch_name]
-    return model_fn(**kwargs)
-
-
-def CQTResNet(input_shape, num_classes, arch):
-    """Build a spectrogram resnet, including setting the num classes."""
-    return from_arch(arch, num_classes=num_classes)

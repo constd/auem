@@ -1,27 +1,28 @@
-"""Test resnet models."""
+"""Test if all exported models are instantiated and follow the protocol."""
 
 # noqa: D400, D103
 import pytest
-from omegaconf import DictConfig
 
 from traincore import models
 from traincore.models import __all__ as all_registered_models
+from traincore.models.protocol import AuemModelProtocol
 
 
 @pytest.fixture(params=all_registered_models)
-def model_config(request):
-    """This returns.
+def model_cls(request):
+    """Fixture that yields each registered model class for parametrized testing.
 
     Args:
-        request (_type_): _description_
+        request: Pytest request object containing the current parameter value.
 
     Returns:
-        _type_: _description_
+        type: A model class from the traincore.models module.
     """
+    print(request.param)
     return getattr(models, request.param)
 
 
-def test_metrics_should_instantiate_and_follow_protocol(model_config: DictConfig):
-    model = model_config()
+def test_metrics_should_instantiate_and_follow_protocol(model_cls):
+    model = model_cls()
 
-    assert isinstance(model, models.protocol.AuemModelProtocol)
+    assert isinstance(model, AuemModelProtocol)

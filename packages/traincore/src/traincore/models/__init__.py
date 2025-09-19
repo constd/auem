@@ -1,8 +1,8 @@
 """Pytorch models and model components for audio."""
 
+from traincore.models.resnet import SpectrogramResNet
 
-__all__ = ["CQTResNet", "SpectrogramResNet"]  # , "SimpleCNNBase", "SimpleNN"]
-
-from .resnet import CQTResNet, SpectrogramResNet
 # from .simplecnn import SimpleCNNBase
 # from .simplenn import SimpleNN
+
+__all__ = ["SpectrogramResNet"]  # , "SimpleCNNBase", "SimpleNN"]
