@@ -1,4 +1,4 @@
-name: Lint Check
+name: check lint
 
 on:
   push:
@@ -19,9 +19,6 @@ jobs:
 
       - name: check lint
         run: make python-lint
-
-      - name: check format
-        run: make python-format
 
   format:
     runs-on: ubuntu-latest
