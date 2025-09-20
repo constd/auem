@@ -21,7 +21,7 @@ repos:
       - id: check-yaml
       - id: check-json
       - id: pretty-format-json
-        args: [--autofix, --no-sort-keys, --indent=2]
+        args: [--autofix, --no-sort-keys, --indent=2, --ignore=ipynb]
 
   # Prevent checked-in notebooks from storing output.
   - repo: https://github.com/srstevenson/nb-clean
