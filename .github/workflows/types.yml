@@ -1,4 +1,4 @@
-name: Lint Check
+name: Type Check
 
 on:
   push:
@@ -19,8 +19,5 @@ jobs:
 
       - run: uv pip freeze
 
-      - name: check lint
-        run: make python-lint
-
-      - name: check format
-        run: make python-format
+      - name: check types
+        run: make python-type

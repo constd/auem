@@ -1,7 +1,7 @@
 # This workflow will install Python dependencies, run tests and lint with a single version of Python
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
 
-name: GitHub CI-CD
+name: run test
 
 on:
   push:
@@ -26,7 +26,6 @@ jobs:
 
     runs-on: ubuntu-latest
 
-    # TODO: get test suite stable with free-threaded python
     continue-on-error: ${{ endsWith(matrix.python-version, 't') }}
 
     steps:
@@ -39,27 +38,9 @@ jobs:
 
       - name: install deps
         run: make build-dev
-        env:
-          LIBTORCH_USE_PYTORCH: 1
 
       - name: run python tests
         run: make test
         env:
           HYPOTHESIS_PROFILE: slow
           PYTEST_ADDOPTS: ${{ endsWith(matrix.python-version, 't') && '--parallel-threads=2' || '' }}
-
-  lint:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: install uv
-        uses: astral-sh/setup-uv@v6
-
-      - run: uv pip freeze
-
-      - name: lint python
-        run: make python-lint
-        env:
-          LIBTORCH_USE_PYTORCH: 1

@@ -7,14 +7,19 @@ build-dev:
 
 python-lint:
 	uvx ruff check .
+
+python-format:
 	uvx ruff format --check .
 
-lint: python-lint rust-lint
+python-type:
+	uvx ty check
+
+lint: python-lint python-format
 
 test:
 	uv run pytest
 
-all: build-dev format lint test
+all: build-dev python-type lint test
 
 clean:
 	rm -rf `find . -name __pycache__`
