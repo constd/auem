@@ -42,4 +42,4 @@ jobs:
         run: make test
         env:
           HYPOTHESIS_PROFILE: slow
-          PYTEST_ADDOPTS: ${{ endsWith(matrix.python-version, 't') && '--parallel-threads=2' || '' }}
+          PYTEST_ADDOPTS: ${{ endsWith(matrix.python-version, 't') }}
