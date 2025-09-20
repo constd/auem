@@ -24,8 +24,13 @@ repos:
         args: [--autofix, --no-sort-keys, --indent=2]
 
   # Prevent checked-in notebooks from storing output.
-  - repo: https://gitlab.com/iamlikeme/nbhooks
-    rev: 1.0.0
+  - repo: https://github.com/srstevenson/nb-clean
+    rev: 4.0.1
     hooks:
-      - id: nb-ensure-clean
-        args: [--meta, pin_output]
+      - id: nb-clean
+        args:
+          - --remove-empty-cells
+          - --preserve-cell-metadata
+          - tags
+          - slideshow
+          - --
