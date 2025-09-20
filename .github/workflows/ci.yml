@@ -19,6 +19,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version:
+          - "3.11"
           - "3.12"
           - "3.13"
           - "3.13t"
@@ -42,4 +43,4 @@ jobs:
         run: make test
         env:
           HYPOTHESIS_PROFILE: slow
-          PYTEST_ADDOPTS: ${{ endsWith(matrix.python-version, 't') }}
+          PYTEST_ADDOPTS: ${{ endsWith(matrix.python-version, 't') && '--parallel-threads=2' || '' }}
