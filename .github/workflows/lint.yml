@@ -30,3 +30,17 @@ jobs:
 
       - name: check format
         run: make python-format
+
+  types:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: install deps
+        run: make build-dev
+
+      - name: check types
+        run: make python-type
