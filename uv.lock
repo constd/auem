@@ -143,6 +143,7 @@ dev = [
     { name = "pre-commit" },
 ]
 lint = [
+    { name = "pyrefly" },
     { name = "ruff" },
     { name = "ty" },
 ]
@@ -152,6 +153,7 @@ test = [
     { name = "pytest-cov" },
     { name = "pytest-mock" },
     { name = "pytest-pretty" },
+    { name = "pytest-run-parallel" },
 ]
 
 [package.metadata]
@@ -173,6 +175,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [{ name = "pre-commit", specifier = ">=4.3.0" }]
 lint = [
+    { name = "pyrefly" },
     { name = "ruff" },
     { name = "ty" },
 ]
@@ -182,6 +185,7 @@ test = [
     { name = "pytest-cov", specifier = ">=7.0.0" },
     { name = "pytest-mock", specifier = ">=3.15.0" },
     { name = "pytest-pretty", specifier = ">=1.3.0" },
+    { name = "pytest-run-parallel", specifier = ">=0.6.1" },
 ]
 
 [[package]]
@@ -1180,6 +1184,22 @@ wheels = [
 ]
 
 [[package]]
+name = "pyrefly"
+version = "0.33.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ea/7a/4d0bb7accd3e5f88a9ec027cfa781358fe8a4381d6f3aa37d5633a8a16f7/pyrefly-0.33.1.tar.gz", hash = "sha256:6c9710c63bc2015ba9b66fd7d019f81339207863d625abbf204a62dbb06f9bfc", size = 1448500, upload-time = "2025-09-18T21:08:39.826Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c1/67/61141a7f20d987aa53c9db4e22fa939060c289226ae943944477dbc19cf6/pyrefly-0.33.1-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:eb85124d0f62549082c4a7da0186fb01b9d327943988fa226d6a438ff9f13ec2", size = 6716147, upload-time = "2025-09-18T21:08:21.938Z" },
+    { url = "https://files.pythonhosted.org/packages/07/27/9829e8267772c496c3e2763be8f076e87f6aa30d5ea5ce3dbfad38cb5bdd/pyrefly-0.33.1-py3-none-macosx_11_0_arm64.whl", hash = "sha256:2f5684d853851f5436081593c61eab6544ce967de30f6c292c0a4d9277f1e8a6", size = 6273479, upload-time = "2025-09-18T21:08:24.009Z" },
+    { url = "https://files.pythonhosted.org/packages/57/4d/9a3eec0576aa81a1908b77dcfab4b02cc2427e5747798b9ffb5ff0790f48/pyrefly-0.33.1-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:0786de1e6209ee41bf88ca6435cd51d17eaa4e02444c9a3eb413729793535d18", size = 6500521, upload-time = "2025-09-18T21:08:26.155Z" },
+    { url = "https://files.pythonhosted.org/packages/3e/62/04f728927a968c50ab932a55d8972393ae754f6802aef34be041c04a5f7c/pyrefly-0.33.1-py3-none-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:a4af7bae847fa71a6568599a4b6f718806e2c0d980c5935a3d450be8cad0bc53", size = 7329109, upload-time = "2025-09-18T21:08:29.963Z" },
+    { url = "https://files.pythonhosted.org/packages/67/6e/e57b52dca3b80247f8af8de71bd077c7e27e1e71bc4925aeb64ee8c28c53/pyrefly-0.33.1-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f1728ae24da9a6c84f3cb61da011fe2e8708f8a99620600186a61f3237c01e66", size = 6993761, upload-time = "2025-09-18T21:08:31.743Z" },
+    { url = "https://files.pythonhosted.org/packages/68/12/afb53121b909d12096b9d120d15aa0ea16ffce1ec9282ab99248a5dd6a7d/pyrefly-0.33.1-py3-none-win32.whl", hash = "sha256:1d76c05bd066ef7398bb05f91674206c9cc9fadb9113457044df545b29bf69d5", size = 6493672, upload-time = "2025-09-18T21:08:33.859Z" },
+    { url = "https://files.pythonhosted.org/packages/e2/48/ee6c84b1eb45b936b0b6bd1619db0d2c8f2aaac078755942cc04e421ef29/pyrefly-0.33.1-py3-none-win_amd64.whl", hash = "sha256:2218e207c06e69258735d6c13d888a680a4b18b5890c5b27f020185609a18c63", size = 6931703, upload-time = "2025-09-18T21:08:35.986Z" },
+    { url = "https://files.pythonhosted.org/packages/51/72/417b3f5845232c30897eb6472c9ea7e70f52a7167d3f65a8042fe6e777bf/pyrefly-0.33.1-py3-none-win_arm64.whl", hash = "sha256:329ebd3cf015ff734ec1779ef57c6a86b66b350d6d764ed94053cf85b4ffc502", size = 6535442, upload-time = "2025-09-18T21:08:38.153Z" },
+]
+
+[[package]]
 name = "pytest"
 version = "8.4.2"
 source = { registry = "https://pypi.org/simple" }
@@ -1245,6 +1265,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/ba/d7/c699e0be5401fe9ccad484562f0af9350b4e48c05acf39fb3dab1932128f/pytest_pretty-1.3.0.tar.gz", hash = "sha256:97e9921be40f003e40ae78db078d4a0c1ea42bf73418097b5077970c2cc43bf3", size = 219297, upload-time = "2025-06-04T12:54:37.322Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ab/85/2f97a1b65178b0f11c9c77c35417a4cc5b99a80db90dad4734a129844ea5/pytest_pretty-1.3.0-py3-none-any.whl", hash = "sha256:074b9d5783cef9571494543de07e768a4dda92a3e85118d6c7458c67297159b7", size = 5620, upload-time = "2025-06-04T12:54:36.229Z" },
+]
+
+[[package]]
+name = "pytest-run-parallel"
+version = "0.6.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e0/02/497531a2767068a4c4a1dc6ebc5ecd7bbb35a2d5bc4765012ccf1fc17a37/pytest_run_parallel-0.6.1.tar.gz", hash = "sha256:920aef9e7c168c4dc5536601811901873dc2c4dfb66eaa1467e9fdeb11833b5c", size = 45481, upload-time = "2025-08-13T20:44:28.085Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/eb/47/fa78e3fa344df260ddb593e227f22f50ada92d7a734c0c0a4af967afb0ac/pytest_run_parallel-0.6.1-py3-none-any.whl", hash = "sha256:9c02ea510bc0e1807f71afc477c7a2fcc949b18fc16564321905f6915893bcf8", size = 16477, upload-time = "2025-08-13T20:44:26.902Z" },
 ]
 
 [[package]]
