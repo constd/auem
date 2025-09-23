@@ -8,6 +8,6 @@ dataset_store: ZenStore = ZenStore()(
     hydra_convert="all",
 )
 
-from traincore.data.datasets import *  # noqa
+from traincore.data.sets import *  # noqa
 
 dataset_store.add_to_hydra_store()
