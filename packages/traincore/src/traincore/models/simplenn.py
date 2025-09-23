@@ -35,7 +35,6 @@ class SimpleNN(AuemClassifierBase):
         )
         self.encoder: EncoderProtocol | None = encoder
         self.decoder: EncoderProtocol | None = decoder
-        #
 
         self.dense_layers: nn.ModuleList = nn.ModuleList()
 
