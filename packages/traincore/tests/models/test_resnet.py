@@ -1,7 +1,10 @@
 """Test resnet models."""
 
 # noqa: D400, D103
+import pytest
 import torch
+from torch.nn import Sequential
+from torchvision.models.resnet import BasicBlock
 
 import traincore.models.resnet as auem_resnet
 
@@ -14,7 +17,7 @@ def test_resent_basicblock():
     n_planes = 16
     n_blocks = 3
 
-    resnet_block = auem_resnet.resnet_block(
+    resnet_block: Sequential = auem_resnet.resnet_block(
         auem_resnet.BasicBlock,
         n_planes,
         n_blocks,
@@ -26,27 +29,37 @@ def test_resent_basicblock():
     assert output.shape == (batch_size, n_planes, freq_bins, time_steps)
 
 
-# @pytest.mark.parametrize("feature_shape", [(None, 1, 128, 256), (None, 1, 128, 64)])
-# @pytest.mark.parametrize("n_classes", [2, 10])
-# @pytest.mark.parametrize("arch", ["resnet18", "resnet34"])
-# def test_create_model(feature_shape, n_classes, arch):
-#     """Test creating resnet model."""
-#     model = auem_resnet.CQTResNet(feature_shape, num_classes=n_classes, arch=arch)
+@pytest.mark.parametrize("feature_shape", [(None, 1, 128, 256), (None, 1, 128, 64)])
+@pytest.mark.parametrize("n_classes", [2, 10])
+@pytest.mark.parametrize(
+    "arch", [(BasicBlock, (2, 2, 2, 2)), (BasicBlock, (3, 4, 6, 3))]
+)
+def test_create_model(
+    feature_shape: tuple[None, int, int, int],
+    n_classes: int,
+    arch: tuple[auem_resnet.BasicBlock | auem_resnet.Bottleneck, tuple[int, ...]],
+):
+    """Test creating resnet model."""
+    model = auem_resnet.SpectrogramResNet(
+        block=arch[0],
+        layers=arch[1],
+        num_classes=n_classes,
+    )
 
-#     criterion = torch.nn.BCEWithLogitsLoss()
+    criterion = torch.nn.BCEWithLogitsLoss()
 
-#     batch_shape = (8,) + feature_shape[1:]
-#     targets = torch.randint(n_classes, (8,))
-#     y = torch.zeros(8, n_classes)
-#     y[range(8), targets] = 1
-#     batch = torch.rand(*batch_shape)
+    batch_shape = (8,) + feature_shape[1:]
+    targets = torch.randint(n_classes, (8,))
+    y = torch.zeros(8, n_classes)
+    y[range(8), targets] = 1
+    batch = torch.rand(*batch_shape)
 
-#     model.train()
-#     y_hat = model(batch)
-#     assert len(y_hat) == len(batch)
-#     assert y_hat.shape[1] == n_classes
+    model.train()
+    y_hat = model(batch)
+    assert len(y_hat) == len(batch)
+    assert y_hat.shape[1] == n_classes
 
-#     # Make sure we can update the weights successfully.
-#     # loss = torch.nn.NLLLoss(model.parameters())
-#     loss = criterion(y_hat, y)
-#     loss.backward()
+    # Make sure we can update the weights successfully.
+    # loss = torch.nn.NLLLoss(model.parameters())
+    loss = criterion(y_hat, y)
+    loss.backward()

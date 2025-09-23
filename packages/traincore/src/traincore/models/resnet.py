@@ -5,6 +5,10 @@ import torchvision.models.resnet as torch_resnet
 from torchvision.models.resnet import BasicBlock, Bottleneck, conv1x1
 
 from traincore.config_stores.models import model_store
+from traincore.models.decoders.protocol import DecoderProtocol
+from traincore.models.encoders.protocol import EncoderProtocol
+
+__all__ = ["resnet_block", "BasicBlock", "Bottleneck", "SpectrogramResNet"]
 
 
 def resnet_block(
@@ -18,7 +22,7 @@ def resnet_block(
     norm_layer: Callable[..., nn.Module] | None = None,
     groups: int = 1,
     base_width: int = 64,
-):
+) -> nn.Sequential:
     """Build a single ResNet block."""
     if norm_layer is None:
         norm_layer = nn.BatchNorm2d
@@ -28,10 +32,10 @@ def resnet_block(
         dilation *= stride
         stride = 1
     if getattr(block_type, "expansion", None) is not None:
-        if stride != 1 or inplanes != planes * block_type.expansion:
+        if stride != 1 or inplanes != planes * block_type.expansion:  #  ty: ignore[unresolved-attribute]
             downsample = nn.Sequential(
-                conv1x1(inplanes, planes * block_type.expansion, stride),
-                norm_layer(planes * block_type.expansion),
+                conv1x1(inplanes, planes * block_type.expansion, stride),  #  ty: ignore[unresolved-attribute]
+                norm_layer(planes * block_type.expansion),  #  ty: ignore[unresolved-attribute]
             )
 
     layers = []
@@ -47,7 +51,7 @@ def resnet_block(
             norm_layer,
         )
     )
-    inplanes = planes * block_type.expansion
+    inplanes = planes * block_type.expansion  #  ty: ignore[unresolved-attribute]
     for _ in range(1, blocks):
         layers.append(
             block_type(
@@ -74,20 +78,20 @@ class SpectrogramResNet(torch_resnet.ResNet):
     The original assumes 3 input planes, and provides no way to configure it.
     """
 
-    mtype = "e2a"
+    mtype: str = "e2a"
 
     def __init__(
         self,
-        encoder=None,
-        decoder=None,
-        block=BasicBlock,
-        layers=[2, 2, 2, 2],
-        num_classes=1000,
-        zero_init_residual=False,
-        groups=1,
-        width_per_group=64,
-        replace_stride_with_dilation=None,
-        norm_layer=None,
+        encoder: EncoderProtocol | None = None,
+        decoder: DecoderProtocol | None = None,
+        block: type[BasicBlock] | type[Bottleneck] = BasicBlock,
+        layers: tuple[int, ...] = (2, 2, 2, 2),
+        num_classes: int = 1000,
+        zero_init_residual: bool = False,
+        groups: int = 1,
+        width_per_group: int = 64,
+        replace_stride_with_dilation: list[bool] | None = None,
+        norm_layer: Callable[..., nn.Module] | None = None,
     ):
         """Build a ResNet for spectograms.
 
@@ -97,15 +101,15 @@ class SpectrogramResNet(torch_resnet.ResNet):
         we want to change ;(
         """
         nn.Module.__init__(self)
-        self.encoder = encoder
-        self.decoder = decoder
+        self.encoder: EncoderProtocol | None = encoder
+        self.decoder: EncoderProtocol | None = decoder
 
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
-        self._norm_layer = norm_layer
+        self._norm_layer: Callable[..., nn.Module] = norm_layer
 
-        self.inplanes = 64
-        self.dilation = 1
+        self.inplanes: int = 64
+        self.dilation: int = 1
         if replace_stride_with_dilation is None:
             # each element in the tuple indicates if we should replace
             # the 2x2 stride with a dilated convolution instead
@@ -115,8 +119,8 @@ class SpectrogramResNet(torch_resnet.ResNet):
                 "replace_stride_with_dilation should be None "
                 "or a 3-element tuple, got {}".format(replace_stride_with_dilation)
             )
-        self.groups = groups
-        self.base_width = width_per_group
+        self.groups: int = groups
+        self.base_width: int = width_per_group
         self.conv1 = nn.Conv2d(
             1, self.inplanes, kernel_size=7, stride=2, padding=3, bias=False
         )

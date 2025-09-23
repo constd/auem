@@ -9,7 +9,7 @@ from traincore.models.protocol import AuemModelProtocol
 
 
 @pytest.fixture(params=all_registered_models)
-def model_cls(request):
+def model_cls(request) -> AuemModelProtocol:
     """Fixture that yields each registered model class for parametrized testing.
 
     Args:
@@ -18,11 +18,11 @@ def model_cls(request):
     Returns:
         type: A model class from the traincore.models module.
     """
-    print(request.param)
+
     return getattr(models, request.param)
 
 
-def test_metrics_should_instantiate_and_follow_protocol(model_cls):
+def test_metrics_should_instantiate_and_follow_protocol(model_cls: AuemModelProtocol):
     model = model_cls()
 
     assert isinstance(model, AuemModelProtocol)
