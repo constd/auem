@@ -4,7 +4,7 @@ import pathlib
 import tempfile
 from collections import defaultdict
 from typing import Any, List, Union
-
+from pathlib import Path
 import numpy as np
 
 
@@ -19,7 +19,7 @@ class FeatureCache:
 
     def __init__(
         self,
-        cache_dir: Union[str, pathlib.Path] = None,
+        cache_dir: str | Path | None = None,
     ):
         self.cache_dir = cache_dir if cache_dir else tempfile.TemporaryDirectory()
         self.cache_dir = pathlib.Path(self.cache_dir)

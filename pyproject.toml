@@ -22,6 +22,7 @@ dependencies = [
     "einops>=0.8.1",
     "beartype>=0.21.0",
     "lightning>=2.5.5",
+    "click>=8.3.0",
 ]
 
 [tool.uv.sources]
@@ -39,8 +40,11 @@ dev = [
 lint = [
     "ty",
     "ruff",
+    "pyrefly"
 ]
 test = [
+    "librosa>=0.11.0",
+    "matplotlib>=3.10.6",
     "pytest>=8.4.2",
     "pytest-benchmark>=5.1.0",
     "pytest-cov>=7.0.0",
@@ -51,6 +55,10 @@ test = [
 
 [tool.ruff.lint]
 ignore = ["F722"]
+
+[tool.ty.src]
+include = ["src", "packages", "tests"]
+exclude = ["notebook"]
 
 [tool.pytest.ini_options]
 addopts = "--jaxtyping-packages=auem,traincore,generation,foundation,beartype.beartype"

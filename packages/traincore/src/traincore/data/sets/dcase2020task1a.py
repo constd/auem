@@ -20,7 +20,7 @@ class DCASE2020Task1aDataset(torch.utils.data.Dataset):
         metadata_df_path: pd.DataFrame,
         data_root: pathlib.Path,
         fold: str = "fold1_train.csv",
-        transforms: Union[torchvision.transforms.Compose, torch.nn.Module] = None,
+        transforms: torchvision.transforms.Compose | torch.nn.Module | None = None,
     ):
         self.data = pd.read_csv(f"{split_df_path}{fold}", sep="\t", header=0)
         if "train" in fold:
@@ -65,5 +65,5 @@ class DCASE2020Task1aDataset(torch.utils.data.Dataset):
         }
         return sample
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.data)

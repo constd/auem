@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Type
 
 import torch.nn as nn
 import torchvision.models.resnet as torch_resnet
@@ -84,7 +84,7 @@ class SpectrogramResNet(torch_resnet.ResNet):
         self,
         encoder: EncoderProtocol | None = None,
         decoder: DecoderProtocol | None = None,
-        block: type[BasicBlock] | type[Bottleneck] = BasicBlock,
+        block: Type[BasicBlock] | Type[Bottleneck] = BasicBlock,
         layers: tuple[int, ...] = (2, 2, 2, 2),
         num_classes: int = 1000,
         zero_init_residual: bool = False,

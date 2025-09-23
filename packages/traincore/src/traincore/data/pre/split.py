@@ -28,7 +28,7 @@ This will create `balanced_train_segments-train-dev.csv` with 5000 records.
 
 import csv
 import logging
-import pathlib
+from pathlib import Path
 from typing import List
 
 import click
@@ -41,10 +41,10 @@ logger = logging.getLogger(__name__)
 @click.argument("source_dataset_path", type=click.Path(exists=True))
 @click.argument("dest_datasets", nargs=-1)
 @click.option("--writedir")
-def split(source_dataset_path: str, dest_datasets: List[str], writedir: str):
+def split(source_dataset_path: Path | str, dest_datasets: List[str], writedir: str):
     """Split a .csv dataset into one or more .csv subsets."""
-    source_dataset_path = pathlib.Path(source_dataset_path)
-    writedir = source_dataset_path.parent if not writedir else pathlib.Path(writedir)
+    source_dataset_path = Path(source_dataset_path)
+    writedir: Path = source_dataset_path.parent if not writedir else Path(writedir)
 
     logger.info("Loading source_dataset_path")
     source_dataset = []

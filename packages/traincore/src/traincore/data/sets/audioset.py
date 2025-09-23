@@ -1,5 +1,6 @@
 """Dataset classes for Google's AudioSet dataset."""
 
+from jaxtyping import Float, Array
 import csv
 import json
 import logging
@@ -9,14 +10,15 @@ import warnings
 from copy import deepcopy
 from csv import DictReader
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Set, Tuple, Union
+from typing import Iterable
 
 import librosa
 import numpy as np
 import pescador
 import torch
 import torchvision
-from auem.data.caching import FeatureCache
+
+from traincore.data.pre.caching import FeatureCache
 
 logger = logging.getLogger(__name__)
 
@@ -123,7 +125,7 @@ class AudiosetAnnotationReaderV2:
         - List of classes
     """
 
-    def __init__(self, annotation_path: Union[Path, str], classes: Set[str]):
+    def __init__(self, annotation_path: Path | str, classes: set[str]):
         self.annotation_path = annotation_path
         self.classes = classes
         self._class_set = set(classes)
@@ -153,7 +155,7 @@ class AudiosetAnnotationReaderV2:
 
         return len(self._annotations)
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int):
         """Return a single line from the file, by index."""
         if not self._annotations:
             self._load_annotations()
@@ -182,7 +184,7 @@ class AudiosetAnnotationReaderV2:
         self._idx += 1
 
     def clear_non_existing(
-        self, audioset_path: Path, datapath_map: Dict[str, Path]
+        self, audioset_path: Path, datapath_map: dict[str, Path]
     ) -> "AudiosetAnnotationReaderV2":
         """Remove annotations for files which do not exist.
 
@@ -199,7 +201,7 @@ class AudiosetAnnotationReaderV2:
 
 def _load_audio(
     audio_path: Path, start_seconds: float, end_seconds: float
-) -> Tuple[np.ndarray, float]:
+) -> tuple[Float[Array, "channel sample"], int | float | None]:
     duration = end_seconds - start_seconds
 
     with warnings.catch_warnings():
@@ -210,7 +212,7 @@ def _load_audio(
 
         except ValueError:
             logger.error(f"Caught error loading or processing audio file {audio_path}")
-            return [], None
+            return np.zeros((1, 1)), None
 
 
 class AudiosetDataset(torch.utils.data.Dataset):
@@ -244,12 +246,12 @@ class AudiosetDataset(torch.utils.data.Dataset):
 
     def __init__(
         self,
-        audioset_path: Union[str, Path],
-        ontology: Union[str, Path],
-        audioset_annotations: Union[str, Path],
-        transforms: Union[torch.nn.Module, torchvision.transforms.Compose] = None,
-        audio_cache_dir: Union[str, Path] = None,
-        filter_classes: Optional[List[str]] = None,
+        audioset_path: str | Path,
+        ontology: str | Path,
+        audioset_annotations: str | Path,
+        transforms: torch.nn.Module | torchvision.transforms.Compose | None = None,
+        audio_cache_dir: str | Path | None = None,
+        filter_classes: list[str] | None = None,
     ):
         self.transforms = transforms
         with open(ontology, "r") as f:
@@ -288,7 +290,7 @@ class AudiosetDataset(torch.utils.data.Dataset):
 
     def load_audio(
         self, ytid: str, start_seconds: float, end_seconds: float
-    ) -> Tuple[np.ndarray, float]:
+    ) -> tuple[Float[Array, "channel time"], float | int]:
         """Load the audio, optionally with caching."""
         t0 = time.time()
 
@@ -398,10 +400,10 @@ class IterableAudiosetDataset(torch.utils.data.IterableDataset):
 
     def __init__(
         self,
-        audioset_path: Union[str, Path],
-        ontology: Union[str, Path],
-        audioset_annotations: Union[str, Path],
-        streamer_settings: Optional[dict] = None,
+        audioset_path: str | Path,
+        ontology: str | Path,
+        audioset_annotations: str | Path,
+        streamer_settings: dict[str, str] | None = None,
         evaluate: bool = False,
         **audioset_kwargs,
     ):
@@ -462,7 +464,7 @@ class IterableAudiosetDataset(torch.utils.data.IterableDataset):
 
         return audiofile_mux
 
-    def __iter__(self):
+    def __iter__(self) -> pescador.Streamer:
         """Iterate over the dataset, or the fraction provided to this worker."""
         # Worker handling taken from https://pytorch.org/docs/stable/data.html#torch.utils.data.IterableDataset # noqa E501
         worker_info = torch.utils.data.get_worker_info()

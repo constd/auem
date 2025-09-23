@@ -74,7 +74,7 @@ class SimpleCNNBase(AuemClassifierBase):
                 ((last_out_shape[3] - y_kernel_size) // y_stride) + 1,
             )
 
-        last_out_shape = (None, np.prod(last_out_shape[1:]))
+        last_out_shape = (None, int(np.prod(last_out_shape[1:])))
         for layer_def in dense_layer_def:
             dense_layers.append(module=nn.Linear(last_out_shape[1], layer_def))
             last_out_shape = (None, layer_def)

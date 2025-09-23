@@ -1,11 +1,10 @@
 # import string
 
+# import auem.evaluation as au_eval
 # import numpy as np
 # import pandas as pd
 # import pytest
 # from scipy.special import softmax
-
-# import auem.evaluation as au_eval
 
 # np.random.seed(12345)
 
@@ -86,4 +85,3 @@
 
 #         assert result_df.iloc[-1].name == "Average"
 #         assert result_df.columns[-1] == "Log Loss"
-

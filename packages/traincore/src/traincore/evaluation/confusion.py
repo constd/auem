@@ -1,5 +1,4 @@
 import itertools
-from typing import List, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,11 +8,11 @@ from torch.utils.tensorboard import SummaryWriter
 
 def plot_confusion_matrix(
     *,  # prevent positional arguments
-    y_true: np.ndarray = None,
-    y_pred: np.ndarray = None,
-    cm: np.ndarray = None,
-    class_names: Optional[str] = None,
-    figsize=(8, 8),
+    y_true: np.ndarray | None = None,
+    y_pred: np.ndarray | None = None,
+    cm: np.ndarray | None = None,
+    class_names: list[str] = [],
+    figsize: tuple[float, float] = (8, 8),
 ):
     """Returns a matplotlib figure containing the plotted confusion matrix.
 
@@ -37,7 +36,7 @@ def plot_confusion_matrix(
         )
 
     figure = plt.figure(figsize=figsize)
-    plt.imshow(cm, interpolation="nearest", cmap=plt.cm.Blues)
+    plt.imshow(cm, interpolation="nearest", cmap=plt.cm.Blues)  # ty: ignore[unresolved-attribute]
     plt.title("Confusion matrix")
     plt.colorbar()
     tick_marks = np.arange(len(class_names))
@@ -63,12 +62,14 @@ def log_confusion_matrix(
     summary_writer: SummaryWriter,
     y_true: np.ndarray,
     y_pred: np.ndarray,
-    class_names: List[str] = None,
+    class_names: list[str] = [],
     **kwargs,
 ) -> None:
     """Compute the image of a confusion matrix, and save it to disk for tensorboard
 
     Use as a callback.
     """
-    figure = plot_confusion_matrix(y_true, y_pred, class_names)
+    figure = plot_confusion_matrix(
+        y_true=y_true, y_pred=y_pred, class_names=class_names
+    )
     summary_writer.add_figure("cm", figure, **kwargs)

@@ -7,6 +7,7 @@ from torch.nn import Sequential
 from torchvision.models.resnet import BasicBlock
 
 import traincore.models.resnet as auem_resnet
+from typing import Type
 
 
 def test_resent_basicblock():
@@ -37,7 +38,9 @@ def test_resent_basicblock():
 def test_create_model(
     feature_shape: tuple[None, int, int, int],
     n_classes: int,
-    arch: tuple[auem_resnet.BasicBlock | auem_resnet.Bottleneck, tuple[int, ...]],
+    arch: tuple[
+        Type[auem_resnet.BasicBlock] | Type[auem_resnet.Bottleneck], tuple[int, ...]
+    ],
 ):
     """Test creating resnet model."""
     model = auem_resnet.SpectrogramResNet(

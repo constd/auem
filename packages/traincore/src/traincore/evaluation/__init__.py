@@ -1,5 +1,5 @@
 from functools import partial
-from typing import Any, Dict, List, Optional
+from typing import Any, List
 
 import numpy as np
 import pandas as pd
@@ -45,10 +45,10 @@ def prediction_report_df(
     target_column: str = "y_true",
     predictions_column: str = "y_pred",
     score_column: str = "y_score",
-    source_column: Optional[str] = None,
+    source_column: str | None = None,
     primary_metric: str = "accuracy",
     secondary_metrics: List[str] = ["logloss"],
-    target_names: Dict[Any, str] = None,
+    target_names: dict[Any, str] | None = None,
     with_formatting: bool = True,
 ) -> pd.DataFrame:
     """Create a "report dataframe", given a dataset's targets and predictions.
