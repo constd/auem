@@ -11,19 +11,19 @@ from traincore.config_stores.model_decoders import model_decoders_store
 class iSTFTDecoder(Module):
     def __init__(
         self,
-        n_fft=2048,
-        hop_length=512,
-        win_length=2048,
+        n_fft: int = 2048,
+        hop_length: int = 512,
+        win_length: int = 2048,
         normalized: bool = False,
         center: bool = True,
         window: str = "hann_window",
-    ):
-        super().__init__()
-        self.n_fft = n_fft
-        self.hop_length = hop_length
-        self.normalized = normalized
-        self.center = center
-        self.window = window
+    ) -> None:
+        super(Module).__init__()
+        self.n_fft: int = n_fft
+        self.hop_length: int = hop_length
+        self.normalized: bool = normalized
+        self.center: bool = center
+        self.window: str = window
 
         self.window = Parameter(
             getattr(torch, self.window, "hann_window")(n_fft),  # ty: ignore[call-non-callable]
@@ -35,7 +35,7 @@ class iSTFTDecoder(Module):
         X: Float[Tensor, "batch channel frequency time"],
         length: int | None = None,
     ) -> Float[Tensor, "batch channel time"]:
-        b, c, f, t = X.size()
+        b, c, _, _ = X.size()
         X_ = rearrange(
             X, "batch channel frequency time -> (batch channel) frequency time"
         )
