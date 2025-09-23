@@ -15,12 +15,12 @@ class MelEncoder(Module):
         n_fft: int = 2048,
         n_hop: int = 512,
         sample_rate: float = 44100.0,
-    ):
+    ) -> None:
         super().__init__()
-        self.window_size = window_size
-        self.n_fft = n_fft
-        self.n_hop = n_hop
-        self.sample_rate = int(sample_rate)
+        self.window_size: int = window_size
+        self.n_fft: int = n_fft
+        self.n_hop: int = n_hop
+        self.sample_rate: int = int(sample_rate)
 
         self.mel = MelSpectrogram(
             n_mels=self.n_mels,
