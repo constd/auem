@@ -33,8 +33,6 @@ available_optimizers = [
 ]
 
 
-from traincore.optimizers import *  # noqa
-
 for optimizer in available_optimizers:
     optimizer_store(
         builds(

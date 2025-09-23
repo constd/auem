@@ -33,8 +33,6 @@ available_schedulers = [
 ]
 
 
-from traincore.optimizers import *  # noqa
-
 for scheduler in available_schedulers:
     scheduler_store(
         builds(
