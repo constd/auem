@@ -11,12 +11,14 @@ from traincore.config_stores.model_encoders import model_encoders_store
 class MelEncoder(Module):
     def __init__(
         self,
+        n_mels: int = 80,
         window_size: int = 2048,
         n_fft: int = 2048,
         n_hop: int = 512,
         sample_rate: float = 44100.0,
     ) -> None:
         super().__init__()
+        self.n_mels = n_mels
         self.window_size: int = window_size
         self.n_fft: int = n_fft
         self.n_hop: int = n_hop
