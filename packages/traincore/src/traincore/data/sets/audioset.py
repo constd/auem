@@ -1,6 +1,6 @@
 """Dataset classes for Google's AudioSet dataset."""
 
-from jaxtyping import Float, Array
+from jaxtyping import Float
 import csv
 import json
 import logging
@@ -16,6 +16,7 @@ import numpy as np
 
 # import pescador
 import torch
+from torch import Tensor
 import torchvision
 
 from traincore.data.pre.caching import FeatureCache
@@ -201,7 +202,7 @@ class AudiosetAnnotationReaderV2:
 
 def _load_audio(
     audio_path: Path, start_seconds: float, end_seconds: float
-) -> tuple[Float[Array, "channel sample"], int | float | None]:
+) -> tuple[Float[Tensor, "channel sample"], int | float | None]:
     import librosa
 
     duration = end_seconds - start_seconds
@@ -292,7 +293,7 @@ class AudiosetDataset(torch.utils.data.Dataset):
 
     def load_audio(
         self, ytid: str, start_seconds: float, end_seconds: float
-    ) -> tuple[Float[Array, "channel time"], float | int]:
+    ) -> tuple[Float[Tensor, "channel time"], float | int]:
         """Load the audio, optionally with caching."""
         t0 = time.time()
 

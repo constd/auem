@@ -1,28 +1,38 @@
-from .protocol import MapDatasetProtocol
-
 import torch
 from torch import Tensor
+import torch.nn.functional as F
+from jaxtyping import Float
 
 __all__ = ["RandomAudioDataset", "RandomAudioWithClassifierDataset"]
 
 
-class RandomAudioDataset(MapDatasetProtocol):
-    def __init__(self, n_examples: int, n_samples: int):
+class RandomAudioDataset(torch.utils.data.Dataset):
+    def __init__(self, n_examples: int, n_samples: int, n_channels: int = 1):
         self.n_examples = n_examples
+        self.n_channels = n_channels
         self.n_samples = n_samples
 
     def __len__(self) -> int:
         return self.n_examples
 
-    def __getitem__(self, index: int) -> dict[str, str | Tensor]:
-        return {"audio": torch.randn((1, self.n_samples))}
+    def __getitem__(
+        self, index: int
+    ) -> dict[str, str | Tensor | Float[Tensor, "channel time"]]:
+        return {"audio": torch.randn(self.n_channels, self.n_samples)}
 
 
 class RandomAudioWithClassifierDataset(RandomAudioDataset):
-    def __init__(self, n_examples: int, n_samples: int, n_classes: int = 2):
-        super().__init__(n_examples, n_samples)
+    def __init__(
+        self, n_examples: int, n_samples: int, n_channels: int = 1, n_classes: int = 2
+    ):
+        super().__init__(n_examples, n_samples, n_channels)
         self.n_classes = n_classes
 
-    def __getitem__(self, index: int) -> dict[str, str | Tensor]:
+    def __getitem__(
+        self, index: int
+    ) -> dict[str, str | Tensor] | Float[Tensor, "channel time"]:
         class_index = torch.randint(0, high=self.n_classes, size=(1,))
-        return {"class": class_index, **super().__getitem__(index)}
+        return {
+            "class": F.one_hot(class_index, num_classes=self.n_classes),
+            **super().__getitem__(index),
+        }
