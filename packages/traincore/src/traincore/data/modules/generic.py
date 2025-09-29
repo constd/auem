@@ -7,6 +7,7 @@ from lightning.pytorch.utilities.types import (
 )
 from torch.utils.data import DataLoader
 
+from traincore.config_stores.datamodules import datamodule_store
 from traincore.data.sets.protocol import DatasetProtocol
 
 
@@ -23,7 +24,8 @@ class DatasetInputType(TypedDict):
     batch_size: BatchSizes = BatchSizes(train=1, validation=1, test=1)
 
 
-class BasicDataModule(LightningDataModule):
+@datamodule_store(name="generic")
+class GenericDataModule(LightningDataModule):
     def __init__(self, datasets: DatasetInputType, data_dir: str = "data") -> None:
         super().__init__()
         self.datasets = datasets

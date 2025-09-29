@@ -1,22 +1,21 @@
 """Dataset classes for Google's AudioSet dataset."""
 
-from jaxtyping import Float, Array
 import csv
 import json
 import logging
-import math
 import time
 import warnings
 from copy import deepcopy
 from csv import DictReader
 from pathlib import Path
-from typing import Iterable
 
-import librosa
 import numpy as np
-import pescador
+
+# import pescador
 import torch
 import torchvision
+from jaxtyping import Float
+from torch import Tensor
 
 from traincore.data.pre.caching import FeatureCache
 
@@ -26,7 +25,6 @@ __all__ = [
     "AudiosetAnnotationReaderV1",
     "AudiosetAnnotationReaderV2",
     "AudiosetDataset",
-    "IterableAudiosetDataset",
 ]
 
 
@@ -201,7 +199,9 @@ class AudiosetAnnotationReaderV2:
 
 def _load_audio(
     audio_path: Path, start_seconds: float, end_seconds: float
-) -> tuple[Float[Array, "channel sample"], int | float | None]:
+) -> tuple[Float[Tensor, "channel sample"], int | float | None]:
+    import librosa
+
     duration = end_seconds - start_seconds
 
     with warnings.catch_warnings():
@@ -290,7 +290,7 @@ class AudiosetDataset(torch.utils.data.Dataset):
 
     def load_audio(
         self, ytid: str, start_seconds: float, end_seconds: float
-    ) -> tuple[Float[Array, "channel time"], float | int]:
+    ) -> tuple[Float[Tensor, "channel time"], float | int]:
         """Load the audio, optionally with caching."""
         t0 = time.time()
 
@@ -362,133 +362,133 @@ class AudiosetDataset(torch.utils.data.Dataset):
         )
 
 
-@pescador.streamable
-def _gen_frames(
-    audioset_dataset: AudiosetDataset,
-    annotation_idx: int,
-    n_frames: int,
-    n_target_frames: int,
-) -> Iterable[dict]:
-    """Given an annotation index, load the audio file and generate frames from it."""
-    sample_data = audioset_dataset[annotation_idx]
-    if sample_data is not None:
-        # sample['X'] is the mel spectrum
-        _, _n_features, n_available_frames = sample_data["X"].shape
+# @pescador.streamable
+# def _gen_frames(
+#     audioset_dataset: AudiosetDataset,
+#     annotation_idx: int,
+#     n_frames: int,
+#     n_target_frames: int,
+# ) -> Iterable[dict]:
+#     """Given an annotation index, load the audio file and generate frames from it."""
+#     sample_data = audioset_dataset[annotation_idx]
+#     if sample_data is not None:
+#         # sample['X'] is the mel spectrum
+#         _, _n_features, n_available_frames = sample_data["X"].shape
 
-        # number of frames available
-        frame_index = np.arange(n_available_frames - (n_frames + n_target_frames))
+#         # number of frames available
+#         frame_index = np.arange(n_available_frames - (n_frames + n_target_frames))
 
-        while True:
-            np.random.shuffle(frame_index)
+#         while True:
+#             np.random.shuffle(frame_index)
 
-            for i in frame_index:
-                sample_frames = sample_data.copy()
-                del sample_frames["raw"]
-                sample_frames["X"] = sample_data["X"][:, :, i : i + n_frames]
-                sample_frames["Y"] = sample_data["X"][
-                    :, :, i + n_frames : i + n_frames + n_target_frames
-                ]
-                yield sample_frames
+#             for i in frame_index:
+#                 sample_frames = sample_data.copy()
+#                 del sample_frames["raw"]
+#                 sample_frames["X"] = sample_data["X"][:, :, i : i + n_frames]
+#                 sample_frames["Y"] = sample_data["X"][
+#                     :, :, i + n_frames : i + n_frames + n_target_frames
+#                 ]
+#                 yield sample_frames
 
-    # else, let this streamer die.
+# else, let this streamer die.
 
 
-class IterableAudiosetDataset(torch.utils.data.IterableDataset):
-    """Iterable-style Torch dataset for sampling from AudioSet data."""
+# class IterableAudiosetDataset(torch.utils.data.IterableDataset):
+#     """Iterable-style Torch dataset for sampling from AudioSet data."""
 
-    STREAMER_DEFAULTS = {"n_frames": 10, "n_target_frames": 1}
+#     STREAMER_DEFAULTS = {"n_frames": 10, "n_target_frames": 1}
 
-    def __init__(
-        self,
-        audioset_path: str | Path,
-        ontology: str | Path,
-        audioset_annotations: str | Path,
-        streamer_settings: dict[str, str] | None = None,
-        evaluate: bool = False,
-        **audioset_kwargs,
-    ):
-        self.audioset_dataset = AudiosetDataset(
-            audioset_path, ontology, audioset_annotations, **audioset_kwargs
-        )
+#     def __init__(
+#         self,
+#         audioset_path: str | Path,
+#         ontology: str | Path,
+#         audioset_annotations: str | Path,
+#         streamer_settings: dict[str, str] | None = None,
+#         evaluate: bool = False,
+#         **audioset_kwargs,
+#     ):
+#         self.audioset_dataset = AudiosetDataset(
+#             audioset_path, ontology, audioset_annotations, **audioset_kwargs
+#         )
 
-        self.streamer_settings = streamer_settings
-        self.evaluate = evaluate
+#         self.streamer_settings = streamer_settings
+#         self.evaluate = evaluate
 
-        self.start = 0
-        self.end = len(self.audioset_dataset)
+#         self.start = 0
+#         self.end = len(self.audioset_dataset)
 
-    def __len__(self):
-        """If evaluate is true, return the length of the validation set.
+#     def __len__(self):
+#         """If evaluate is true, return the length of the validation set.
 
-        Otherwise, length is not defined.
-        """
-        if self.evaluate:
-            return len(self.audioset_dataset)
+#         Otherwise, length is not defined.
+#         """
+#         if self.evaluate:
+#             return len(self.audioset_dataset)
 
-        else:
-            return float("inf")
+#         else:
+#             return float("inf")
 
-    def _build_streamer(self, start_index: int, end_index: int) -> pescador.Streamer:
-        """Create a pescador streamer for the provided indecies into the dataset."""
-        if (
-            self.streamer_settings["n_frames"] is None
-            or self.streamer_settings["n_target_frames"] is None
-        ):
-            raise ValueError(
-                "n_famres and n_target frames are currently required in the config "
-                "for an Iterable dataset."
-            )
+#     def _build_streamer(self, start_index: int, end_index: int) -> pescador.Streamer:
+#         """Create a pescador streamer for the provided indecies into the dataset."""
+#         if (
+#             self.streamer_settings["n_frames"] is None
+#             or self.streamer_settings["n_target_frames"] is None
+#         ):
+#             raise ValueError(
+#                 "n_famres and n_target frames are currently required in the config "
+#                 "for an Iterable dataset."
+#             )
 
-        audiofile_streamers = [
-            _gen_frames(
-                self.audioset_dataset,
-                index,
-                self.streamer_settings["n_frames"],
-                self.streamer_settings["n_target_frames"],
-            )
-            for index in range(start_index, end_index)
-        ]
+#         audiofile_streamers = [
+#             _gen_frames(
+#                 self.audioset_dataset,
+#                 index,
+#                 self.streamer_settings["n_frames"],
+#                 self.streamer_settings["n_target_frames"],
+#             )
+#             for index in range(start_index, end_index)
+#         ]
 
-        if self.evaluate:
-            audiofile_mux = pescador.RoundRobinMux(audiofile_streamers)
-        else:
-            audiofile_mux = pescador.StochasticMux(
-                audiofile_streamers,
-                # todo: eventually, this should probably be a function of
-                #   <batch size> & <# workers>
-                # should probably be (batch_size / num_workers)
-                n_active=self.streamer_settings["n_active"],
-                # on average how many samples are generated from a stream before it dies
-                rate=self.streamer_settings["rate"],
-            )
+#         if self.evaluate:
+#             audiofile_mux = pescador.RoundRobinMux(audiofile_streamers)
+#         else:
+#             audiofile_mux = pescador.StochasticMux(
+#                 audiofile_streamers,
+#                 # todo: eventually, this should probably be a function of
+#                 #   <batch size> & <# workers>
+#                 # should probably be (batch_size / num_workers)
+#                 n_active=self.streamer_settings["n_active"],
+#                 # on average how many samples are generated from a stream before it dies
+#                 rate=self.streamer_settings["rate"],
+#             )
 
-        return audiofile_mux
+#         return audiofile_mux
 
-    def __iter__(self) -> pescador.Streamer:
-        """Iterate over the dataset, or the fraction provided to this worker."""
-        # Worker handling taken from https://pytorch.org/docs/stable/data.html#torch.utils.data.IterableDataset # noqa E501
-        worker_info = torch.utils.data.get_worker_info()
-        if worker_info is None:  # single-process: return the full iterator.
-            iter_start = self.start
-            iter_end = self.end
+#     def __iter__(self) -> pescador.Streamer:
+#         """Iterate over the dataset, or the fraction provided to this worker."""
+#         # Worker handling taken from https://pytorch.org/docs/stable/data.html#torch.utils.data.IterableDataset # noqa E501
+#         worker_info = torch.utils.data.get_worker_info()
+#         if worker_info is None:  # single-process: return the full iterator.
+#             iter_start = self.start
+#             iter_end = self.end
 
-        else:  # in a worker process.
-            # split workload
-            per_worker = int(
-                math.ceil((self.end - self.start) / float(worker_info.num_workers))
-            )
-            worker_id = worker_info.id
+#         else:  # in a worker process.
+#             # split workload
+#             per_worker = int(
+#                 math.ceil((self.end - self.start) / float(worker_info.num_workers))
+#             )
+#             worker_id = worker_info.id
 
-            iter_start = self.start + worker_id * per_worker
-            iter_end = min(iter_start + per_worker, self.end)
+#             iter_start = self.start + worker_id * per_worker
+#             iter_end = min(iter_start + per_worker, self.end)
 
-        if self.evaluate:
-            return self._build_streamer(iter_start, iter_end).iterate(
-                len(self.audioset_dataset)
-            )
-        else:
-            return self._build_streamer(iter_start, iter_end).cycle()
+#         if self.evaluate:
+#             return self._build_streamer(iter_start, iter_end).iterate(
+#                 len(self.audioset_dataset)
+#             )
+#         else:
+#             return self._build_streamer(iter_start, iter_end).cycle()
 
-    def sampling_report(self):
-        """Placeholder, #TODO."""
-        return ""
+#     def sampling_report(self):
+#         """Placeholder, #TODO."""
+#         return ""
