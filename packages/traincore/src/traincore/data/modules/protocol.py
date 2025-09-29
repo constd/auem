@@ -1,13 +1,11 @@
 from typing import Protocol, runtime_checkable
 
-from traincore.data.sets.protocol import DatasetProtocol
+from traincore.data.modules.generic import DatasetInputType
 
 
 @runtime_checkable
 class DataModuleProtocol(Protocol):
-    training_datasets: dict[str, DatasetProtocol] | None
-    validation_datasets: dict[str, DatasetProtocol] | None
-    test_datasets: dict[str, DatasetProtocol] | None
+    datasets: DatasetInputType
 
     def prepare_data(self) -> None: ...
     def setup(self, stage: str | None) -> None: ...
