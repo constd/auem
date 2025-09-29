@@ -1,6 +1,6 @@
 """Test if all exported recipes can be instantiated and follow the protocol."""
 
-from torch import nn, Tensor
+from torch import nn
 import pytest
 from traincore import recipes
 from traincore.recipes import __all__ as all_registered_recipes

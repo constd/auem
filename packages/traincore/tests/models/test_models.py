@@ -1,14 +1,14 @@
 """Test if all exported models are instantiated and follow the protocol."""
 
 import pytest
-from typing import Type
+
 from traincore import models
 from traincore.models import __all__ as all_registered_models
 from traincore.models.protocol import AuemModelProtocol
 
 
 @pytest.fixture(params=all_registered_models)
-def model_cls(request) -> Type[AuemModelProtocol]:
+def model_cls(request) -> type[AuemModelProtocol]:
     """Fixture that yields each registered model class for parametrized testing.
 
     Args:
@@ -22,7 +22,7 @@ def model_cls(request) -> Type[AuemModelProtocol]:
 
 
 def test_metrics_should_instantiate_and_follow_protocol(
-    model_cls: Type[AuemModelProtocol],
+    model_cls: type[AuemModelProtocol],
 ):
     model = model_cls()
 

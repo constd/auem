@@ -1,23 +1,21 @@
 """Dataset classes for Google's AudioSet dataset."""
 
-from jaxtyping import Float
 import csv
 import json
 import logging
-import math
 import time
 import warnings
 from copy import deepcopy
 from csv import DictReader
 from pathlib import Path
-from typing import Iterable
 
 import numpy as np
 
 # import pescador
 import torch
-from torch import Tensor
 import torchvision
+from jaxtyping import Float
+from torch import Tensor
 
 from traincore.data.pre.caching import FeatureCache
 
@@ -27,7 +25,6 @@ __all__ = [
     "AudiosetAnnotationReaderV1",
     "AudiosetAnnotationReaderV2",
     "AudiosetDataset",
-    "IterableAudiosetDataset",
 ]
 
 

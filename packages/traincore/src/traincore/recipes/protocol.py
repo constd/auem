@@ -1,7 +1,6 @@
 from typing import Protocol, Any, runtime_checkable
 from torch import Tensor
 from collections.abc import Mapping
-from lightning.pytorch.utilities.types import STEP_OUTPUT
 
 
 @runtime_checkable

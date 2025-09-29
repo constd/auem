@@ -1,7 +1,8 @@
-from typing import Any, Mapping
-from torch import Tensor, nn
-from lightning import LightningModule
 from collections.abc import Mapping
+from typing import Any
+
+from lightning import LightningModule
+from torch import Tensor, nn
 
 
 class SimpleRecipe(LightningModule):
