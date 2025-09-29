@@ -1,6 +1,9 @@
-from traincore.data.sets.random import *
-
 from torch import Tensor
+
+from traincore.data.sets.random import (
+    RandomAudioDataset,
+    RandomAudioWithClassifierDataset,
+)
 
 
 def test_RandomAudioDataset_should_return_audio_like_data():
@@ -28,4 +31,6 @@ def test_RandomAudioWithClassifierDataset_should_return_audio_and_class():
     assert len(ds) == n_examples
     item: dict[str, str | Tensor] = ds[0]
     assert item["audio"].shape == (1, n_samples)
-    assert item["class"].shape == (1,) and (0 <= item["class"][0] < n_classes)
+    assert item["class"].size() == (1, n_classes) and (
+        0 <= item["class"][0][0] < n_classes
+    )
