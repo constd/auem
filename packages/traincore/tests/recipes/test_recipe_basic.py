@@ -38,12 +38,17 @@ def test_recipes_should_instantiate_and_follow_protocol(
 
 def test_train_and_val_steps_should_return_loss():
     ds = RandomAudioWithClassifierDataset(5, 1000, n_channels=1, n_classes=2)
+    ds.setup()
     item = ds[0]
     # add a batch dimension
-    item["audio"] = item["audio"].unsqueeze(0)
-    item["class"] = item["class"].unsqueeze(0).float()
+    item["audio"] = item["audio"].unsqueeze(0).repeat(10, 1, 1)
+    item["class"] = item["class"].unsqueeze(0).float().repeat(10, 1)
 
-    model = nn.Sequential(nn.Linear(1000, 2))
+    class SqueezeLayer(nn.Module):
+        def forward(self, x):
+            return x.squeeze(1)
+
+    model = nn.Sequential(nn.Linear(1000, 2), SqueezeLayer())
     loss = nn.BCEWithLogitsLoss()
 
     recipe = SimpleRecipe(model, loss)
