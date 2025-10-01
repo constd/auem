@@ -78,7 +78,9 @@ class ConfusionCallback(Callback):
         figure.canvas.draw()
 
         return Image.frombytes(
-            "RGB", figure.canvas.get_width_height(), figure.canvas.tostring_rgb()
+            "RGB",
+            figure.canvas.get_width_height(),
+            figure.canvas.tostring_rgb(),  # ty: ignore[unresolved-attribute]
         )
 
     @rank_zero_only

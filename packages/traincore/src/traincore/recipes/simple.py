@@ -13,9 +13,14 @@ class SimpleRecipe(LightningModule):
         super().__init__()
         self.model = model
         self.loss = loss
+        self.optimizer = optimizer
 
     def training_step(
-        self, batch: dict[str, Any], batch_idx: int | None = None, *args, **kwargs
+        self,
+        batch: dict[str, str | Tensor] | Tensor,
+        batch_idx: int | None = None,
+        *args,
+        **kwargs,
     ) -> Tensor | Mapping[str, Any] | None:
         x, y = batch["audio"], batch["class"]
         y_hat = self.model(x)
@@ -23,7 +28,11 @@ class SimpleRecipe(LightningModule):
         return {"loss": loss}
 
     def validation_step(
-        self, batch: dict[str, Any], batch_idx: int | None = None, *args, **kwargs
+        self,
+        batch: dict[str, str | Tensor] | Tensor,
+        batch_idx: int | None = None,
+        *args,
+        **kwargs,
     ) -> Tensor | Mapping[str, Any] | None:
         x, y = batch["audio"], batch["class"]
         y_hat = self.model(x)
@@ -31,7 +40,11 @@ class SimpleRecipe(LightningModule):
         return {"loss": loss}
 
     def test_step(
-        self, batch: dict[str, Any], batch_idx: int | None = None, *args, **kwargs
+        self,
+        batch: dict[str, str | Tensor] | Tensor,
+        batch_idx: int | None = None,
+        *args,
+        **kwargs,
     ) -> Tensor | Mapping[str, Any] | None:
         pass
 

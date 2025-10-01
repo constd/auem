@@ -1,13 +1,13 @@
 """Test if all exported recipes can be instantiated and follow the protocol."""
 
-from torch import nn
 import pytest
-from traincore import recipes
-from traincore.recipes import __all__ as all_registered_recipes
-from traincore.recipes import SimpleRecipe
-from traincore.recipes.protocol import AuemRecipeProtocol
+from torch import nn, optim
 
+from traincore import recipes
 from traincore.data.sets.random import RandomAudioWithClassifierDataset
+from traincore.recipes import SimpleRecipe
+from traincore.recipes import __all__ as all_registered_recipes
+from traincore.recipes.protocol import AuemRecipeProtocol
 
 
 @pytest.fixture(params=all_registered_recipes)
@@ -41,8 +41,9 @@ def test_train_and_val_steps_should_return_loss():
     ds.setup()
     item = ds[0]
     # add a batch dimension
-    item["audio"] = item["audio"].unsqueeze(0).repeat(10, 1, 1)
-    item["class"] = item["class"].unsqueeze(0).float().repeat(10, 1)
+    item["audio"] = item["audio"].unsqueeze(0).repeat(10, 1, 1)  # ty: ignore[possibly-unbound-attribute]
+
+    item["class"] = item["class"].unsqueeze(0).float().repeat(10, 1)  # ty: ignore[possibly-unbound-attribute]
 
     class SqueezeLayer(nn.Module):
         def forward(self, x):
@@ -50,8 +51,9 @@ def test_train_and_val_steps_should_return_loss():
 
     model = nn.Sequential(nn.Linear(1000, 2), SqueezeLayer())
     loss = nn.BCEWithLogitsLoss()
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-    recipe = SimpleRecipe(model, loss)
+    recipe = SimpleRecipe(model, loss, optimizer)
 
     loss = recipe.training_step(item, 0)
     assert isinstance(loss, dict)

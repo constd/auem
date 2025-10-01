@@ -1,365 +1,365 @@
 """Dataset classes for Google's AudioSet dataset."""
 
-import csv
-import json
-import logging
-import time
-import warnings
-from copy import deepcopy
-from csv import DictReader
-from pathlib import Path
-
-import numpy as np
-
-# import pescador
-import torch
-import torchvision
-from jaxtyping import Float
-from torch import Tensor
-
-from traincore.data.pre.caching import FeatureCache
-
-logger = logging.getLogger(__name__)
-
-__all__ = [
-    "AudiosetAnnotationReaderV1",
-    "AudiosetAnnotationReaderV2",
-    "AudiosetDataset",
-]
-
-
-class AudiosetAnnotationReaderV1(DictReader):
-    """Annotation Reader which wraps csv's DictReader."""
-
-    def __init__(
-        self,
-        f,
-        ontology=None,
-        fieldnames=None,
-        fieldtypes=None,
-        restkey=None,
-        restval=None,
-        dialect="excel",
-        *args,
-        **kwds,
-    ):
-        self.ontology = self.__load_ontology(ontology)
-        self.annotation_stats = None
-        self.annotation_creation_date = None
-        if fieldtypes is None:
-            fieldtypes = {"YTID": str, "end_seconds": float, "start_seconds": float}
-        self.fieldtypes = fieldtypes
-        super().__init__(
-            f,
-            fieldnames=fieldnames,
-            restkey=restkey,
-            restval=restval,
-            dialect=dialect,
-            *args,
-            **kwds,
-        )
-        self.init_properties()
-
-    @staticmethod
-    def __load_ontology(ontology):
-        """Return the ontology as a map."""
-        if ontology is not None:
-            return {x["id"]: x for x in ontology}
-        return ontology
-
-    def init_properties(self):
-        """Load the properties from the .csv file, which are contained in comments."""
-        row = next(self.reader)
-        self.annotation_creation_date = [x.strip("#").rstrip().lstrip() for x in row]
-        row = next(self.reader)
-        self.annotation_stats = {
-            x.split("=")[0].strip("""#|\' \'|\n"""): int(x.split("=")[1]) for x in row
-        }
-        row = next(self.reader)
-        row = [x.strip("""#|\' \'|\n""") for x in row]
-        self.fieldnames = row[:-1]
-        if self.restkey is None:
-            self.restkey = row[-1]
-        self.line_num = self.reader.line_num
-
-    def __next__(self):
-        """Process one row of the csv at a time."""
-        row = next(self.reader)
-        self.line_num = self.reader.line_num
-
-        while row == []:
-            row = next(self.reader)
-        if self.fieldtypes is None:
-            d = dict(zip(self.fieldnames, row))
-        else:
-            # converts fields to a specific datatype (e.g. strings to floats)
-            d = {f: self.fieldtypes[f](r) for f, r in zip(self.fieldnames, row)}
-
-        lf = len(self.fieldnames)
-        lr = len(row)
-        if lf < lr:
-            classes = [x.strip("' '|\"") for x in row[lf:]]
-            if self.ontology is not None:
-                classes = {x: self.ontology[x] for x in set(classes)}
-            d[self.restkey] = classes
-        elif lf > lr:
-            for key in self.fieldnames[lr:]:
-                d[key] = self.restval
-        return d
-
-
-class AudiosetAnnotationReaderV2:
-    """Process the annotation file using the csv reader.
-
-    Loads the entire file at one time, instead of processing line-by-line.
-
-    Parameters
-    ----------
-    annotation_path
-        Path to an Audioset annotations file, which is a csv with four columns:
-        - youtube ID
-        - Start offset (s)
-        - End offset (s)
-        - List of classes
-    """
-
-    def __init__(self, annotation_path: Path | str, classes: set[str]):
-        self.annotation_path = annotation_path
-        self.classes = classes
-        self._class_set = set(classes)
-
-        self._annotations = None
-        self._idx = None
-
-    def _load_annotations(self):
-        """Load the entire annotations file, skipping any "comment" lines."""
-        self._annotations = []
-        with open(self.annotation_path, "r") as fh:
-            for line in csv.reader(
-                fh, quotechar='"', delimiter=",", skipinitialspace=True
-            ):
-                if not line[0].startswith("#"):
-                    if self._contains_class(line):
-                        self._annotations.append(line)
-
-    def _contains_class(self, line: str) -> bool:
-        line_classes = {x for x in line[3].split(",")}
-        return len(line_classes & (self._class_set)) > 0
-
-    def __len__(self):
-        """Return how many annotations were provided in this file."""
-        if not self._annotations:
-            self._load_annotations()
-
-        return len(self._annotations)
-
-    def __getitem__(self, idx: int):
-        """Return a single line from the file, by index."""
-        if not self._annotations:
-            self._load_annotations()
-
-        item = self._annotations[idx]
-
-        return {
-            "ytid": item[0],
-            "start_seconds": float(item[1].strip()),
-            "end_seconds": float(item[2].strip()),
-            "classes": [
-                self.classes.index(k)
-                for k in item[3].split(",")
-                if k in self._class_set
-            ],
-        }
-
-    def __next__(self):
-        """Iterate over the annotations, one by one."""
-        if not self._annotations:
-            self._load_annotations()
-        if self._idx is None:
-            self._idx = 0
-
-        yield self[self._idx]
-        self._idx += 1
-
-    def clear_non_existing(
-        self, audioset_path: Path, datapath_map: dict[str, Path]
-    ) -> "AudiosetAnnotationReaderV2":
-        """Remove annotations for files which do not exist.
-
-        Returns a new copy of the dataset.
-        """
-        if not self._annotations:
-            self._load_annotations()
-
-        copy = self.__class__(self.annotation_path, self.classes)
-        copy._annotations = [x for x in self._annotations if x[0] in datapath_map]
-
-        return copy
-
-
-def _load_audio(
-    audio_path: Path, start_seconds: float, end_seconds: float
-) -> tuple[Float[Tensor, "channel sample"], int | float | None]:
-    import librosa
-
-    duration = end_seconds - start_seconds
-
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-
-        try:
-            return librosa.load(audio_path, offset=start_seconds, duration=duration)
-
-        except ValueError:
-            logger.error(f"Caught error loading or processing audio file {audio_path}")
-            return np.zeros((1, 1)), None
-
-
-class AudiosetDataset(torch.utils.data.Dataset):
-    """Torch-style dataset class for loading AudioSet.
-
-    Parameters
-    ----------
-    audioset_path : pathlike
-        The path to the folder containing the audio files for this partition.
-        Most likely one of ["balanced_train", "eval", "test"].
-
-    ontology: pathlike
-        Full path to the audioset ontology json file.
-
-    audioset_annotations: pathlike
-        Full path to a audioset ontology csv file.
-
-    transforms : List of Callable
-
-    audio_cache_dir : pathlike
-        Directory to save the feature cache.
-
-    filter_classes : List[str]
-        A list of audioset class IDs.
-
-        If provided, all examples which do not contain these classes
-        will be removed for training.
-    """
-
-    SR = 44100
-
-    def __init__(
-        self,
-        audioset_path: str | Path,
-        ontology: str | Path,
-        audioset_annotations: str | Path,
-        transforms: torch.nn.Module | torchvision.transforms.Compose | None = None,
-        audio_cache_dir: str | Path | None = None,
-        filter_classes: list[str] | None = None,
-    ):
-        self.transforms = transforms
-        with open(ontology, "r") as f:
-            self.ontology = json.load(f)
-
-        self.c = len(self.ontology)
-        self.c2l = {
-            x["id"]: x["name"] for x in sorted(self.ontology, key=lambda x: x["id"])
-        }
-        self.l2c = {v: k for k, v in self.c2l.items()}
-        self.filter_classes = filter_classes
-        self.classes = [x["id"] for x in sorted(self.ontology, key=lambda x: x["id"])]
-
-        if self.filter_classes is not None:
-            self.classes = [x for x in sorted(self.filter_classes)]
-
-        audioset_path = Path(audioset_path)
-        self.datapaths = {x.stem: x for x in audioset_path.glob("*[m4a|webm]")}
-
-        self.annotations = AudiosetAnnotationReaderV2(
-            audioset_annotations, classes=self.classes
-        ).clear_non_existing(audioset_path, self.datapaths)
-
-        self.audio_cache_dir = Path(audio_cache_dir) if audio_cache_dir else None
-        self._init_cache()
-
-        self._init_duration_log()
-
-    def _init_cache(self):
-        self._cache = None
-        if self.audio_cache_dir is not None:
-            self._cache = FeatureCache(self.audio_cache_dir)
-
-    def _init_duration_log(self):
-        self._load_durations = []
-
-    def load_audio(
-        self, ytid: str, start_seconds: float, end_seconds: float
-    ) -> tuple[Float[Tensor, "channel time"], float | int]:
-        """Load the audio, optionally with caching."""
-        t0 = time.time()
-
-        try:
-            audio_path = self.datapaths[ytid]
-        except KeyError:
-            logger.error(f"**** Missing key: {ytid} ***")
-            raise
-
-        if self._cache is not None:
-            audio, sr = self._cache.load(
-                _load_audio, audio_path, start_seconds, end_seconds
-            )
-
-        else:
-            audio, sr = _load_audio(audio_path, start_seconds, end_seconds)
-
-        self._load_durations.append(time.time() - t0)
-
-        return audio, sr
-
-    def __getitem__(self, idx: int):
-        """Get a sample from the dataset."""
-        sample = self.annotations[idx]
-
-        audio, sr = self.load_audio(
-            sample["ytid"], sample["start_seconds"], sample["end_seconds"]
-        )
-
-        if len(audio) and sr is not None:
-            max_length = sr * 10
-            temp = torch.zeros(max_length).unsqueeze(0)
-            temp[0, : min(audio.shape[0], max_length)] = torch.tensor(audio)
-
-            audio = temp
-            data = deepcopy(audio)
-            if self.transforms:
-                data = self.transforms(data)
-
-            labels = torch.zeros(self.c)
-            for c in sample["classes"]:
-                labels[c] = 1
-            return {
-                "raw": audio,
-                "X": data,
-                "label": labels,
-                "class": sample["classes"],
-                "class_name": [self.c2l[self.classes[x]] for x in sample["classes"]],
-            }
-
-    def __len__(self):
-        """Size of the dataset, in annotations."""
-        return len(self.annotations)
-
-    def sampling_report(self):
-        """Generate a report as a string."""
-        last_5_durations = np.mean(self._load_durations[-5:])
-
-        cache_report = None
-        if self._cache:
-            cache_report = (
-                f"Cache [hits={self._cache._stats['cache_hit']}|"
-                f"misses={self._cache._stats['cache_miss']}]"
-            )
-        return (
-            f"Dataset time log (n=5): {last_5_durations} " + cache_report
-            if cache_report
-            else ""
-        )
+# import csv
+# import json
+# import logging
+# import time
+# import warnings
+# from copy import deepcopy
+# from csv import DictReader
+# from pathlib import Path
+
+# import numpy as np
+
+# # import pescador
+# import torch
+# import torchvision
+# from jaxtyping import Float
+# from torch import Tensor
+
+# from traincore.data.pre.caching import FeatureCache
+
+# logger = logging.getLogger(__name__)
+
+# __all__ = [
+#     "AudiosetAnnotationReaderV1",
+#     "AudiosetAnnotationReaderV2",
+#     "AudiosetDataset",
+# ]
+
+
+# class AudiosetAnnotationReaderV1(DictReader):
+#     """Annotation Reader which wraps csv's DictReader."""
+
+#     def __init__(
+#         self,
+#         f,
+#         ontology=None,
+#         fieldnames=None,
+#         fieldtypes=None,
+#         restkey=None,
+#         restval=None,
+#         dialect="excel",
+#         *args,
+#         **kwds,
+#     ):
+#         self.ontology = self.__load_ontology(ontology)
+#         self.annotation_stats = None
+#         self.annotation_creation_date = None
+#         if fieldtypes is None:
+#             fieldtypes = {"YTID": str, "end_seconds": float, "start_seconds": float}
+#         self.fieldtypes = fieldtypes
+#         super().__init__(
+#             f,
+#             fieldnames=fieldnames,
+#             restkey=restkey,
+#             restval=restval,
+#             dialect=dialect,
+#             *args,
+#             **kwds,
+#         )
+#         self.init_properties()
+
+#     @staticmethod
+#     def __load_ontology(ontology):
+#         """Return the ontology as a map."""
+#         if ontology is not None:
+#             return {x["id"]: x for x in ontology}
+#         return ontology
+
+#     def init_properties(self):
+#         """Load the properties from the .csv file, which are contained in comments."""
+#         row = next(self.reader)
+#         self.annotation_creation_date = [x.strip("#").rstrip().lstrip() for x in row]
+#         row = next(self.reader)
+#         self.annotation_stats = {
+#             x.split("=")[0].strip("""#|\' \'|\n"""): int(x.split("=")[1]) for x in row
+#         }
+#         row = next(self.reader)
+#         row = [x.strip("""#|\' \'|\n""") for x in row]
+#         self.fieldnames = row[:-1]
+#         if self.restkey is None:
+#             self.restkey = row[-1]
+#         self.line_num = self.reader.line_num
+
+#     def __next__(self):
+#         """Process one row of the csv at a time."""
+#         row = next(self.reader)
+#         self.line_num = self.reader.line_num
+
+#         while row == []:
+#             row = next(self.reader)
+#         if self.fieldtypes is None:
+#             d = dict(zip(self.fieldnames, row))
+#         else:
+#             # converts fields to a specific datatype (e.g. strings to floats)
+#             d = {f: self.fieldtypes[f](r) for f, r in zip(self.fieldnames, row)}
+
+#         lf = len(self.fieldnames)
+#         lr = len(row)
+#         if lf < lr:
+#             classes = [x.strip("' '|\"") for x in row[lf:]]
+#             if self.ontology is not None:
+#                 classes = {x: self.ontology[x] for x in set(classes)}
+#             d[self.restkey] = classes
+#         elif lf > lr:
+#             for key in self.fieldnames[lr:]:
+#                 d[key] = self.restval
+#         return d
+
+
+# class AudiosetAnnotationReaderV2:
+#     """Process the annotation file using the csv reader.
+
+#     Loads the entire file at one time, instead of processing line-by-line.
+
+#     Parameters
+#     ----------
+#     annotation_path
+#         Path to an Audioset annotations file, which is a csv with four columns:
+#         - youtube ID
+#         - Start offset (s)
+#         - End offset (s)
+#         - List of classes
+#     """
+
+#     def __init__(self, annotation_path: Path | str, classes: set[str]):
+#         self.annotation_path = annotation_path
+#         self.classes = classes
+#         self._class_set = set(classes)
+
+#         self._annotations = None
+#         self._idx = None
+
+#     def _load_annotations(self):
+#         """Load the entire annotations file, skipping any "comment" lines."""
+#         self._annotations = []
+#         with open(self.annotation_path, "r") as fh:
+#             for line in csv.reader(
+#                 fh, quotechar='"', delimiter=",", skipinitialspace=True
+#             ):
+#                 if not line[0].startswith("#"):
+#                     if self._contains_class(line):
+#                         self._annotations.append(line)
+
+#     def _contains_class(self, line: str) -> bool:
+#         line_classes = {x for x in line[3].split(",")}
+#         return len(line_classes & (self._class_set)) > 0
+
+#     def __len__(self):
+#         """Return how many annotations were provided in this file."""
+#         if not self._annotations:
+#             self._load_annotations()
+
+#         return len(self._annotations)
+
+#     def __getitem__(self, idx: int):
+#         """Return a single line from the file, by index."""
+#         if not self._annotations:
+#             self._load_annotations()
+
+#         item = self._annotations[idx]
+
+#         return {
+#             "ytid": item[0],
+#             "start_seconds": float(item[1].strip()),
+#             "end_seconds": float(item[2].strip()),
+#             "classes": [
+#                 self.classes.index(k)
+#                 for k in item[3].split(",")
+#                 if k in self._class_set
+#             ],
+#         }
+
+#     def __next__(self):
+#         """Iterate over the annotations, one by one."""
+#         if not self._annotations:
+#             self._load_annotations()
+#         if self._idx is None:
+#             self._idx = 0
+
+#         yield self[self._idx]
+#         self._idx += 1
+
+#     def clear_non_existing(
+#         self, audioset_path: Path, datapath_map: dict[str, Path]
+#     ) -> "AudiosetAnnotationReaderV2":
+#         """Remove annotations for files which do not exist.
+
+#         Returns a new copy of the dataset.
+#         """
+#         if not self._annotations:
+#             self._load_annotations()
+
+#         copy = self.__class__(self.annotation_path, self.classes)
+#         copy._annotations = [x for x in self._annotations if x[0] in datapath_map]
+
+#         return copy
+
+
+# def _load_audio(
+#     audio_path: Path, start_seconds: float, end_seconds: float
+# ) -> tuple[Float[Tensor, "channel sample"], int | float | None]:
+#     import librosa
+
+#     duration = end_seconds - start_seconds
+
+#     with warnings.catch_warnings():
+#         warnings.simplefilter("ignore")
+
+#         try:
+#             return librosa.load(audio_path, offset=start_seconds, duration=duration)
+
+#         except ValueError:
+#             logger.error(f"Caught error loading or processing audio file {audio_path}")
+#             return np.zeros((1, 1)), None
+
+
+# class AudiosetDataset(torch.utils.data.Dataset):
+#     """Torch-style dataset class for loading AudioSet.
+
+#     Parameters
+#     ----------
+#     audioset_path : pathlike
+#         The path to the folder containing the audio files for this partition.
+#         Most likely one of ["balanced_train", "eval", "test"].
+
+#     ontology: pathlike
+#         Full path to the audioset ontology json file.
+
+#     audioset_annotations: pathlike
+#         Full path to a audioset ontology csv file.
+
+#     transforms : List of Callable
+
+#     audio_cache_dir : pathlike
+#         Directory to save the feature cache.
+
+#     filter_classes : List[str]
+#         A list of audioset class IDs.
+
+#         If provided, all examples which do not contain these classes
+#         will be removed for training.
+#     """
+
+#     SR = 44100
+
+#     def __init__(
+#         self,
+#         audioset_path: str | Path,
+#         ontology: str | Path,
+#         audioset_annotations: str | Path,
+#         transforms: torch.nn.Module | torchvision.transforms.Compose | None = None,
+#         audio_cache_dir: str | Path | None = None,
+#         filter_classes: list[str] | None = None,
+#     ):
+#         self.transforms = transforms
+#         with open(ontology, "r") as f:
+#             self.ontology = json.load(f)
+
+#         self.c = len(self.ontology)
+#         self.c2l = {
+#             x["id"]: x["name"] for x in sorted(self.ontology, key=lambda x: x["id"])
+#         }
+#         self.l2c = {v: k for k, v in self.c2l.items()}
+#         self.filter_classes = filter_classes
+#         self.classes = [x["id"] for x in sorted(self.ontology, key=lambda x: x["id"])]
+
+#         if self.filter_classes is not None:
+#             self.classes = [x for x in sorted(self.filter_classes)]
+
+#         audioset_path = Path(audioset_path)
+#         self.datapaths = {x.stem: x for x in audioset_path.glob("*[m4a|webm]")}
+
+#         self.annotations = AudiosetAnnotationReaderV2(
+#             audioset_annotations, classes=self.classes
+#         ).clear_non_existing(audioset_path, self.datapaths)
+
+#         self.audio_cache_dir = Path(audio_cache_dir) if audio_cache_dir else None
+#         self._init_cache()
+
+#         self._init_duration_log()
+
+#     def _init_cache(self):
+#         self._cache = None
+#         if self.audio_cache_dir is not None:
+#             self._cache = FeatureCache(self.audio_cache_dir)
+
+#     def _init_duration_log(self):
+#         self._load_durations = []
+
+#     def load_audio(
+#         self, ytid: str, start_seconds: float, end_seconds: float
+#     ) -> tuple[Float[Tensor, "channel time"], float | int]:
+#         """Load the audio, optionally with caching."""
+#         t0 = time.time()
+
+#         try:
+#             audio_path = self.datapaths[ytid]
+#         except KeyError:
+#             logger.error(f"**** Missing key: {ytid} ***")
+#             raise
+
+#         if self._cache is not None:
+#             audio, sr = self._cache.load(
+#                 _load_audio, audio_path, start_seconds, end_seconds
+#             )
+
+#         else:
+#             audio, sr = _load_audio(audio_path, start_seconds, end_seconds)
+
+#         self._load_durations.append(time.time() - t0)
+
+#         return audio, sr
+
+#     def __getitem__(self, idx: int):
+#         """Get a sample from the dataset."""
+#         sample = self.annotations[idx]
+
+#         audio, sr = self.load_audio(
+#             sample["ytid"], sample["start_seconds"], sample["end_seconds"]
+#         )
+
+#         if len(audio) and sr is not None:
+#             max_length = sr * 10
+#             temp = torch.zeros(max_length).unsqueeze(0)
+#             temp[0, : min(audio.shape[0], max_length)] = torch.tensor(audio)
+
+#             audio = temp
+#             data = deepcopy(audio)
+#             if self.transforms:
+#                 data = self.transforms(data)
+
+#             labels = torch.zeros(self.c)
+#             for c in sample["classes"]:
+#                 labels[c] = 1
+#             return {
+#                 "raw": audio,
+#                 "X": data,
+#                 "label": labels,
+#                 "class": sample["classes"],
+#                 "class_name": [self.c2l[self.classes[x]] for x in sample["classes"]],
+#             }
+
+#     def __len__(self):
+#         """Size of the dataset, in annotations."""
+#         return len(self.annotations)
+
+#     def sampling_report(self):
+#         """Generate a report as a string."""
+#         last_5_durations = np.mean(self._load_durations[-5:])
+
+#         cache_report = None
+#         if self._cache:
+#             cache_report = (
+#                 f"Cache [hits={self._cache._stats['cache_hit']}|"
+#                 f"misses={self._cache._stats['cache_miss']}]"
+#             )
+#         return (
+#             f"Dataset time log (n=5): {last_5_durations} " + cache_report
+#             if cache_report
+#             else ""
+#         )
 
 
 # @pescador.streamable
