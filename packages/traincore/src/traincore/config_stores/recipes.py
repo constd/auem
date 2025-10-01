@@ -1,8 +1,8 @@
 from hydra_zen import ZenStore
 
-__all__ = ["recipe"]
+__all__ = ["recipe_store"]
 
-recipe: ZenStore = ZenStore()(
+recipe_store: ZenStore = ZenStore()(
     group="recipe",
     populate_full_signature=True,
     hydra_convert="all",
@@ -10,5 +10,3 @@ recipe: ZenStore = ZenStore()(
 
 
 from traincore.recipes import *  # noqa
-
-recipe.add_to_hydra_store()

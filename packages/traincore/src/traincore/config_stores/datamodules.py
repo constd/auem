@@ -13,5 +13,3 @@ datamodule_store: ZenStore = ZenStore()(
 )
 
 from traincore.data.modules import *  # noqa
-
-datamodule_store.add_to_hydra_store()

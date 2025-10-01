@@ -16,11 +16,10 @@ logger_store: ZenStore = ZenStore()(
 # TBD: do we need this? these should be coming from other libraries
 # from traincore.loggers import *  # noqa
 
-logger_store(builds(llog.CSVLogger), populate_full_signature=True)
-logger_store(builds(llog.CometLogger), populate_full_signature=True)
-logger_store(builds(llog.MLFlowLogger), populate_full_signature=True)
-logger_store(builds(llog.TensorBoardLogger), populate_full_signature=True)
-logger_store(builds(llog.WandbLogger), populate_full_signature=True)
-
-
-logger_store.add_to_hydra_store()
+logger_store(builds(llog.CSVLogger), name="csv", populate_full_signature=True)
+logger_store(builds(llog.CometLogger), name="comet", populate_full_signature=True)
+logger_store(builds(llog.MLFlowLogger), name="mlflow", populate_full_signature=True)
+logger_store(
+    builds(llog.TensorBoardLogger), name="tensorboard", populate_full_signature=True
+)
+logger_store(builds(llog.WandbLogger), name="wandb", populate_full_signature=True)

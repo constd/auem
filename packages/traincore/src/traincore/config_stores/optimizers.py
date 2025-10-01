@@ -19,9 +19,7 @@ available_optimizers = [
     "Adafactor",
     "Adadelta",
     "Adagrad",
-    "Adam",
     "Adamax",
-    "AdamW",
     "ASGD",
     "LBFGS",
     "NAdam",
@@ -36,8 +34,9 @@ available_optimizers = [
 for optimizer in available_optimizers:
     optimizer_store(
         builds(
-            getattr(optim, optimizer), populate_full_signature=True, zen_partial=True
-        )
+            getattr(optim, optimizer),
+            populate_full_signature=True,
+            zen_partial=True,
+        ),
+        name=optimizer,
     )
-
-optimizer_store.add_to_hydra_store()

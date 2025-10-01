@@ -26,5 +26,3 @@ callback_store(
     builds(lcall.ModelCheckpoint, name="checkpoint", save_top_k=10, save_last=True),
     populate_full_signature=True,
 )
-
-callback_store.add_to_hydra_store()

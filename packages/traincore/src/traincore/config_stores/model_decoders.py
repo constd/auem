@@ -9,5 +9,3 @@ model_decoders_store: ZenStore = ZenStore()(
 )
 
 from traincore.models.decoders import *  # noqa
-
-model_decoders_store.add_to_hydra_store()

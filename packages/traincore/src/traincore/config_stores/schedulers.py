@@ -41,5 +41,3 @@ for scheduler in available_schedulers:
             zen_partial=True,
         )
     )
-
-scheduler_store.add_to_hydra_store()

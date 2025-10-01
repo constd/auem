@@ -5,7 +5,11 @@ from hydra_zen.third_party.beartype import (
 
 __all__ = ["dataset_store"]
 
-dataset_store: ZenStore = ZenStore()(
+dataset_store: ZenStore = ZenStore(
+    name="dataset_store",
+    deferred_to_config=True,
+    deferred_hydra_store=True,
+)(
     group="dataset",
     populate_full_signature=True,
     hydra_convert="all",
@@ -13,5 +17,3 @@ dataset_store: ZenStore = ZenStore()(
 )
 
 from traincore.data.sets import *  # noqa
-
-dataset_store.add_to_hydra_store()
