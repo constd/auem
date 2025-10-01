@@ -30,8 +30,9 @@ def test_recipes_should_instantiate_and_follow_protocol(
     # It doesn't matter what these are
     model = nn.Linear(1000, 2)
     loss = nn.CrossEntropyLoss()
+    opt = optim.Adam(model.parameters(), lr=0.001)
 
-    recipe = recipe_cls(model, loss)
+    recipe = recipe_cls(model, loss, opt)
 
     assert isinstance(recipe, AuemRecipeProtocol)
 
@@ -55,7 +56,7 @@ def test_train_and_val_steps_should_return_loss():
 
     recipe = SimpleRecipe(model, loss, optimizer)
 
-    loss = recipe.training_step(item, 0)
+    loss = recipe.training_step({"random": item}, 0)
     assert isinstance(loss, dict)
 
     val_loss = recipe.validation_step(item, 0)

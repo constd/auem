@@ -1,8 +1,9 @@
 from collections.abc import Mapping
 from functools import partial
-from typing import Any
+from typing import Any, TypedDict
 
 from lightning import LightningModule
+import torch
 from torch import Tensor, nn, optim
 
 from traincore.config_stores.recipes import recipe_store
@@ -20,16 +21,18 @@ class SimpleRecipe(LightningModule):
 
     def training_step(
         self,
-        batch: dict[str, dict[str, str | Tensor]] | Tensor,
+        batch: dict[str, dict[str, str | Tensor] | Tensor],
         batch_idx: int | None = None,
         *args,
         **kwargs,
     ) -> Tensor | Mapping[str, Any] | None:
-        random_batch = batch["random"]
-        x, y = random_batch["audio"], random_batch["class"]
-        y_hat = self.model(x)
-        loss = self.loss(y_hat, y.float())
-        return {"loss": loss}
+        total_loss = torch.tensor(0.0, device=self.device)
+        for _, dataset in batch.items():
+            x, y = dataset["audio"], dataset["class"]
+            y_hat = self.model(x)
+            loss = self.loss(y_hat, y.float())
+            total_loss += loss
+        return {"loss": total_loss}
 
     def validation_step(
         self,
