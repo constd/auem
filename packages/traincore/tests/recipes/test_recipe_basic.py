@@ -37,7 +37,7 @@ def test_recipes_should_instantiate_and_follow_protocol(
 
 
 def test_train_and_val_steps_should_return_loss():
-    ds = RandomAudioWithClassifierDataset(5, 1000, n_channels=1, n_classes=2)
+    ds = RandomAudioWithClassifierDataset(5, 1000, n_channels=1, num_classes=2)
     ds.setup()
     item = ds[0]
     # add a batch dimension

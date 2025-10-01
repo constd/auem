@@ -9,14 +9,14 @@
 # np.random.seed(12345)
 
 
-# def generate_example(n_classes, p_match=0.5, n_sources=3):
-#     target = np.random.randint(0, n_classes)
+# def generate_example(num_classes, p_match=0.5, n_sources=3):
+#     target = np.random.randint(0, num_classes)
 #     if np.random.random() < p_match:
 #         y_pred = target
 #     else:
-#         y_pred = np.random.randint(0, n_classes)
+#         y_pred = np.random.randint(0, num_classes)
 
-#     y_score = softmax(np.random.random(n_classes))
+#     y_score = softmax(np.random.random(num_classes))
 #     # shift it so the max is the same as y_pred'
 #     y_score = np.roll(y_score, y_pred - np.argmax(y_score))
 
@@ -33,7 +33,7 @@
 
 
 # @pytest.fixture(params=[2, 10])
-# def n_classes(request):
+# def num_classes(request):
 #     return request.param
 
 
@@ -44,10 +44,10 @@
 
 # class TestPredictionReport:
 #     @pytest.fixture
-#     def example_preds_df(self, request, n_examples, n_sources, n_classes):
+#     def example_preds_df(self, request, n_examples, n_sources, num_classes):
 #         df = pd.DataFrame(
 #             [
-#                 generate_example(n_classes, n_sources=n_sources)
+#                 generate_example(num_classes, n_sources=n_sources)
 #                 for _ in range(n_examples)
 #             ]
 #         )
@@ -74,7 +74,7 @@
 #         assert isinstance(result_df._repr_html_(), str)
 
 #     def test_prediction_report_df__with_source(
-#         self, example_preds_df, n_examples, n_sources, n_classes
+#         self, example_preds_df, n_examples, n_sources, num_classes
 #     ):
 #         result_df = au_eval.prediction_report_df(
 #             example_preds_df, source_column="source", with_formatting=False

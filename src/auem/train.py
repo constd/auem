@@ -10,8 +10,9 @@ from auem.configs.mainconfig import train_store  # noqa
 
 
 def train(config: DictConfig) -> None:
-    if config.get("logger", None) is not None:
-        loggers: Logger = instantiate(config.logger)
+    loggers: Logger | None = (
+        instantiate(config.logger) if config.get("logger", None) else None
+    )
 
     data: LightningDataModule = instantiate(config.data)
 

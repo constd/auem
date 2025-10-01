@@ -45,7 +45,6 @@ for criterion in available_criterions:
         builds(
             getattr(nn, criterion),
             populate_full_signature=True,
-            zen_partial=True,
         ),
         name=criterion,
     )

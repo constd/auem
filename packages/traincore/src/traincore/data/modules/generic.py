@@ -26,9 +26,10 @@ class DatasetInputType(TypedDict):
 
 @datamodule_store(name="generic")
 class GenericDataModule(LightningDataModule):
-    def __init__(self, datasets: DatasetInputType) -> None:
+    def __init__(self, datasets: DatasetInputType, num_workers: int = 1) -> None:
         super().__init__()
         self.datasets = datasets
+        self.num_workers = num_workers
 
     def prepare_data(self) -> None:
         # Download and tokenize data here
@@ -62,11 +63,11 @@ class GenericDataModule(LightningDataModule):
 
     def train_dataloader(self) -> TRAIN_DATALOADERS:
         # Return train dataloader here
-        if self.datasets.exists("train"):
+        if self.datasets.get("train", None):
             return {
                 name: DataLoader(
                     dataset,
-                    batch_size=self.datasetes.get("batch_sizes", {}).get("train", 1),
+                    batch_size=self.datasets.get("batch_sizes", {}).get("train", 1),
                     drop_last=True,
                     num_workers=self.num_workers,
                     timeout=600,
@@ -78,33 +79,35 @@ class GenericDataModule(LightningDataModule):
 
     def val_dataloader(self) -> EVAL_DATALOADERS:
         # Return validation dataloader here
-        if self.datasets.exists("validation"):
+        if self.datasets.get("validation", None):
             return {
                 name: DataLoader(
                     dataset,
-                    batch_size=self.datasetes.get("batch_sizes", {}).get("train", 1),
+                    batch_size=self.datasets.get("batch_sizes", {}).get(
+                        "validation", 1
+                    ),
                     drop_last=True,
                     num_workers=self.num_workers,
                     timeout=600,
                     shuffle=False,
                 )
-                for name, dataset in self.datasets["train"].items()
+                for name, dataset in self.datasets["validation"].items()
             }
         return None
 
     def test_dataloader(self) -> EVAL_DATALOADERS:
         # Return test dataloader here
-        if self.datasets.exists("test"):
+        if self.datasets.get("test", None):
             return {
                 name: DataLoader(
                     dataset,
-                    batch_size=self.datasetes.get("batch_sizes", {}).get("train", 1),
+                    batch_size=self.datasets.get("batch_sizes", {}).get("test", 1),
                     drop_last=True,
                     num_workers=self.num_workers,
                     timeout=600,
                     shuffle=False,
                 )
-                for name, dataset in self.datasets["train"].items()
+                for name, dataset in self.datasets["test"].items()
             }
         return None
 

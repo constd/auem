@@ -10,23 +10,33 @@ defaults:
   - /recipe: simple
   - /criterion@recipe.loss: BCEWithLogitsLoss
   - /optimizer@recipe.optimizer: Adam
-  - /trainer: null
+  - /trainer: lit
+
+trainer:
+  fast_dev_run: true
 
 data:
   datasets:
-    train.random.n_examples: 5
-    validation.random.n_examples: 2
-    test.random.n_examples: 3
+    train:
+      random:
+        n_examples: 5
+        n_samples: 2206
+        num_classes: 5
+    validation:
+      random:
+        n_examples: 2
+        n_samples: 2206
+        num_classes: 5
+    test:
+      random:
+        n_examples: 3
+        n_samples: 2206
+        num_classes: 5
     batch_size:
       train: 2
       validation: 1
       test: 1
-# recipe:
-#   optimizer:
-#   scheduler:
-#   loss:
-#   logger:
 
-# trainer:
-#   recipe:
-#   datamodule:
+model:
+  input_shape: [1, 1, 2206]
+  num_classes: 5

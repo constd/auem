@@ -1,4 +1,5 @@
 from collections.abc import Mapping
+from functools import partial
 from typing import Any
 
 from lightning import LightningModule
@@ -9,7 +10,9 @@ from traincore.config_stores.recipes import recipe_store
 
 @recipe_store(name="simple")
 class SimpleRecipe(LightningModule):
-    def __init__(self, model: nn.Module, loss: nn.Module, optimizer: optim.Optimizer):
+    def __init__(
+        self, model: nn.Module, loss: nn.Module, optimizer: optim.Optimizer | partial
+    ):
         super().__init__()
         self.model = model
         self.loss = loss
@@ -17,14 +20,15 @@ class SimpleRecipe(LightningModule):
 
     def training_step(
         self,
-        batch: dict[str, str | Tensor] | Tensor,
+        batch: dict[str, dict[str, str | Tensor]] | Tensor,
         batch_idx: int | None = None,
         *args,
         **kwargs,
     ) -> Tensor | Mapping[str, Any] | None:
-        x, y = batch["audio"], batch["class"]
+        random_batch = batch["random"]
+        x, y = random_batch["audio"], random_batch["class"]
         y_hat = self.model(x)
-        loss = self.loss(y_hat, y)
+        loss = self.loss(y_hat, y.float())
         return {"loss": loss}
 
     def validation_step(
@@ -36,7 +40,7 @@ class SimpleRecipe(LightningModule):
     ) -> Tensor | Mapping[str, Any] | None:
         x, y = batch["audio"], batch["class"]
         y_hat = self.model(x)
-        loss = self.loss(y_hat, y)
+        loss = self.loss(y_hat.float(), y.float())
         return {"loss": loss}
 
     def test_step(
@@ -48,4 +52,5 @@ class SimpleRecipe(LightningModule):
     ) -> Tensor | Mapping[str, Any] | None:
         pass
 
-    def configure_optimizers(self) -> Any: ...
+    def configure_optimizers(self) -> Any:
+        return self.optimizer(self.model.parameters())

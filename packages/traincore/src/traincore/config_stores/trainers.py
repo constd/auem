@@ -19,6 +19,6 @@ trainer_store(
     builds(
         L.Trainer,
         populate_full_signature=True,
-        zen_partial=True,
-    )
+    ),
+    name="lit",
 )

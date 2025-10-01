@@ -24,13 +24,13 @@ def test_RandomAudioWithClassifierDataset_should_return_audio_and_class():
     n_examples = 10
     example_length = 1.0
     n_samples = round(sr * example_length)
-    n_classes = 2
+    num_classes = 2
     ds = RandomAudioWithClassifierDataset(
-        n_examples, n_samples=n_samples, n_classes=n_classes
+        n_examples, n_samples=n_samples, num_classes=num_classes
     )
     ds.setup()
 
     assert len(ds) == n_examples
     item: dict[str, str | Tensor] | Tensor = ds[0]
     assert item["audio"].shape == (1, n_samples)  # ty: ignore[possibly-unbound-attribute]
-    assert item["class"].size() == (n_classes,)  # ty: ignore[possibly-unbound-attribute]
+    assert item["class"].size() == (num_classes,)  # ty: ignore[possibly-unbound-attribute]
