@@ -26,7 +26,7 @@ class DatasetInputType(TypedDict):
 
 @datamodule_store(name="generic")
 class GenericDataModule(LightningDataModule):
-    def __init__(self, datasets: DatasetInputType, data_dir: str = "data") -> None:
+    def __init__(self, datasets: DatasetInputType) -> None:
         super().__init__()
         self.datasets = datasets
 

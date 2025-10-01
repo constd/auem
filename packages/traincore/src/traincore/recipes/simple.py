@@ -2,11 +2,14 @@ from collections.abc import Mapping
 from typing import Any
 
 from lightning import LightningModule
-from torch import Tensor, nn
+from torch import Tensor, nn, optim
+
+from traincore.config_stores.recipes import recipe_store
 
 
+@recipe_store(name="simple")
 class SimpleRecipe(LightningModule):
-    def __init__(self, model: nn.Module, loss: nn.Module):
+    def __init__(self, model: nn.Module, loss: nn.Module, optimizer: optim.Optimizer):
         super().__init__()
         self.model = model
         self.loss = loss
