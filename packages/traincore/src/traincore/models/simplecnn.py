@@ -5,6 +5,7 @@ from collections.abc import Iterable
 import numpy as np
 from torch import Tensor, nn
 
+from traincore.config_stores.models import model_store
 from traincore.models.base import AuemClassifierBase
 from traincore.models.decoders.protocol import DecoderProtocol
 from traincore.models.encoders.protocol import EncoderProtocol
@@ -22,6 +23,7 @@ DEFAULT_CONV_LAYER_DEF: list[tuple[int, int, tuple[int, ...]]] = [
 DEFAULT_DENSE_LAYER_DEF: list[int] = [128]
 
 
+@model_store(name="simplcenn")
 class SimpleCNNBase(AuemClassifierBase):
     """Configurable CNN Model."""
 
