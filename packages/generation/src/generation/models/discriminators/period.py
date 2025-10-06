@@ -11,7 +11,7 @@ from generation.models.discriminators.protocol import DiscriminatorReturnType
 __all__ = ["PeriodDiscriminator"]
 
 
-@model_store(name="model/discriminator")
+@model_store(name="model/discriminator/period")
 class PeriodDiscriminator(nn.Module):
     def __init__(
         self,
