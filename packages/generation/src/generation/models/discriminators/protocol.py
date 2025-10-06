@@ -4,7 +4,7 @@ from jaxtyping import Float
 from torch import Tensor
 from traincore.models.protocol import AuemModelProtocol
 
-__all__ = ["DiscriminatorProtocol", "DiscriminatorReturnType"]
+__all__ = ["DiscriminatorProtocol", "DiscriminatorReturnType", "MultiDiscriminatorProtocol", "MultiDiscriminatorReturnType"]
 
 
 class DiscriminatorReturnType(TypedDict):
