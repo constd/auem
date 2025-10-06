@@ -1,10 +1,12 @@
 from typing import ClassVar
+from omegaconf import II
 
 import numpy as np
 from einops import rearrange
 from torch import nn, Tensor
 from torch.nn.utils.parametrizations import weight_norm
 
+from traincore.models.encoders.protocol import EncoderProtocol
 from traincore.config_stores.models import model_store
 
 __all__ = ["MelGanGenerator"]
@@ -28,7 +30,7 @@ class ResnetBlock(nn.Module):
         return self.shortcut(x) + self.block(x)
 
 
-@model_store(name="melgan")
+@model_store(name="melgan", n_mels=II("encoder.n_mels"))
 class MelGanGenerator(nn.Module):
     ratios: ClassVar[list[int]] = [8, 8, 2, 2]
 
@@ -39,14 +41,12 @@ class MelGanGenerator(nn.Module):
         pad_input: bool = True,
         n_residual_layers: int = -1,
         output_channels: int = 1,
-        encoder: nn.Module | None = None,
-        decoder: nn.Module | None = None,
+        encoder: EncoderProtocol | None = None,
         sample_rate: float = 44100.0,
         max_frames: int = -1,
     ) -> None:
         super().__init__()
         self.encoder = encoder
-        self.decoder = decoder
 
         self.n_mels = n_mels
         self.pad_input = pad_input
@@ -96,7 +96,7 @@ class MelGanGenerator(nn.Module):
 
             for j in range(self.n_residual_layers):
                 model += [
-                    ResidualBlock(mult * ngf // 2, dilation=3**j),
+                    ResnetBlock(mult * ngf // 2, dilation=3**j),
                 ]
 
             mult //= 2
@@ -110,10 +110,14 @@ class MelGanGenerator(nn.Module):
         self.model = nn.Sequential(*model)
 
     def forward(self, x: Tensor) -> Tensor:
+        if self.encoder is not None:
+            X = self.encoder(x)
+        else:
+            X = x
+
         # x: (batch source channels frequency time)
         # TODO: reshape
-        b, s, c, f, t = x.shape
-        # x: x = x.reshape(-1, f, t)
-        x = rearrange(x, "b s c f t -> (b s c) f t")
-        x_heart = self.model(x)
-        return rearrange(x_heart, "(b s c) 1 t -> b s c t", b=b, s=s, c=c)
+        b, s, c, f, t = X.shape
+        X = rearrange(X, "b s c f t -> (b s c) f t")
+        X_heart = self.model(X)
+        return rearrange(X_heart, "(b s c) 1 t -> b s c t", b=b, s=s, c=c)
