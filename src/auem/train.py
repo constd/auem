@@ -27,11 +27,9 @@ def train(config: DictConfig) -> None:
 
 if __name__ == "__main__":
     initialize(
-        config_path="auem/configs",
+        config_path="configs",
         job_name="train",
         version_base="1.3",
     )
-    config = compose(
-        config_name="train_config", overrides=["+experiment=tests/classification"]
-    )
+    config = compose(config_name="train_config")
     train(config)
