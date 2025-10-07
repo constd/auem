@@ -40,55 +40,53 @@ class PeriodDiscriminator(nn.Module):
 
         dilation = 1
         norm = spectral_norm if use_spectral_norm else weight_norm
-        self.model = nn.ModuleList(
-            [
-                norm(
-                    nn.Conv2d(
-                        1,
-                        32 * self.d_mult,
-                        kernel_size=(self.kernel_size, 1),
-                        stride=(self.stride, 1),
-                        padding=((self.kernel_size * dilation - dilation) // 2, 0),
-                    )
-                ),
-                norm(
-                    nn.Conv2d(
-                        32 * self.d_mult,
-                        128 * self.d_mult,
-                        kernel_size=(self.kernel_size, 1),
-                        stride=(self.stride, 1),
-                        padding=((self.kernel_size * dilation - dilation) // 2, 0),
-                    )
-                ),
-                norm(
-                    nn.Conv2d(
-                        128 * self.d_mult,
-                        512 * self.d_mult,
-                        kernel_size=(self.kernel_size, 1),
-                        stride=(self.stride, 1),
-                        padding=((self.kernel_size * dilation - dilation) // 2, 0),
-                    )
-                ),
-                norm(
-                    nn.Conv2d(
-                        512 * self.d_mult,
-                        1024 * self.d_mult,
-                        kernel_size=(self.kernel_size, 1),
-                        stride=(self.stride, 1),
-                        padding=((self.kernel_size * dilation - dilation) // 2, 0),
-                    )
-                ),
-                norm(
-                    nn.Conv2d(
-                        1024 * self.d_mult,
-                        1024 * self.d_mult,
-                        kernel_size=(self.kernel_size, 1),
-                        stride=1,
-                        padding=((2, 0),),
-                    )
-                ),
-            ]
-        )
+        self.model = nn.ModuleList([
+            norm(
+                nn.Conv2d(
+                    1,
+                    32 * self.d_mult,
+                    kernel_size=(self.kernel_size, 1),
+                    stride=(self.stride, 1),
+                    padding=((self.kernel_size * dilation - dilation) // 2, 0),
+                )
+            ),
+            norm(
+                nn.Conv2d(
+                    32 * self.d_mult,
+                    128 * self.d_mult,
+                    kernel_size=(self.kernel_size, 1),
+                    stride=(self.stride, 1),
+                    padding=((self.kernel_size * dilation - dilation) // 2, 0),
+                )
+            ),
+            norm(
+                nn.Conv2d(
+                    128 * self.d_mult,
+                    512 * self.d_mult,
+                    kernel_size=(self.kernel_size, 1),
+                    stride=(self.stride, 1),
+                    padding=((self.kernel_size * dilation - dilation) // 2, 0),
+                )
+            ),
+            norm(
+                nn.Conv2d(
+                    512 * self.d_mult,
+                    1024 * self.d_mult,
+                    kernel_size=(self.kernel_size, 1),
+                    stride=(self.stride, 1),
+                    padding=((self.kernel_size * dilation - dilation) // 2, 0),
+                )
+            ),
+            norm(
+                nn.Conv2d(
+                    1024 * self.d_mult,
+                    1024 * self.d_mult,
+                    kernel_size=(self.kernel_size, 1),
+                    stride=1,
+                    padding=((2, 0),),
+                )
+            ),
+        ])
         self.conv_post = norm(
             nn.Conv2d(int(1024 * self.d_mult), 1, (3, 1), 1, padding=(1, 0))
         )

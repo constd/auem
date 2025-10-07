@@ -40,9 +40,9 @@ class MultiDiscriminator(nn.Module):
     ):
         super().__init__()
         self.configs = configs
-        self.discriminators = nn.ModuleList(
-            [discriminator(**config) for config in self.configs]
-        )
+        self.discriminators = nn.ModuleList([
+            discriminator(**config) for config in self.configs
+        ])
 
     def forward(self, y: Tensor, y_hat: Tensor) -> MultiDiscriminatorReturnType:
         y_d_rs = []
