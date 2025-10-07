@@ -11,9 +11,14 @@ __all__ = ["RandomAudioDataset", "RandomAudioWithClassifierDataset"]
 @dataset_store(name="random_audio")
 class RandomAudioDataset(torch.utils.data.Dataset):
     def __init__(
-        self, n_examples: int = 1, n_samples: int = 22050, n_channels: int = 1
+        self,
+        n_examples: int = 1,
+        n_sources: int = 1,
+        n_samples: int = 22050,
+        n_channels: int = 1,
     ):
         self.n_examples = n_examples
+        self.n_sources = n_sources
         self.n_channels = n_channels
         self.n_samples = n_samples
         self.data = None
@@ -22,15 +27,27 @@ class RandomAudioDataset(torch.utils.data.Dataset):
         return self.n_examples
 
     def setup(self, stage: str | None = None) -> None:
-        self.data = torch.randn(self.n_examples, self.n_channels, self.n_samples)
+        self.data = torch.randn(
+            self.n_examples, self.n_sources, self.n_channels, self.n_samples
+        )
 
     def prepare_data(self) -> None: ...
 
     def __getitem__(
         self, index: int
-    ) -> dict[str, str | Tensor | Float[Tensor, "channel time"]]:
+    ) -> dict[
+        str,
+        str
+        | Tensor
+        | Float[Tensor, "sources channel time"]
+        | Float[Tensor, "channel time"],
+    ]:
         if self.data is not None:
-            return {"audio": self.data[index]}
+            return {
+                "audio": self.data[index],
+                "mix_augmented": self.data[index].mean(0),
+                "mix": self.data[index].mean(0),
+            }
         return {}
 
 
