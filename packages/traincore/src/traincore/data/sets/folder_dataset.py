@@ -4,8 +4,10 @@ from omegaconf import II
 from torch import Tensor
 
 from traincore.config_stores.datasets import dataset_store
-from traincore.io.audio import load_audio
 from traincore.functional.audio import pad_sources
+from traincore.io.audio import load_audio
+
+__all__ = ["FolderDataset"]
 
 
 @dataset_store(

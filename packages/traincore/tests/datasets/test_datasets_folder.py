@@ -1,6 +1,7 @@
+import numpy as np
 import pytest
 import soundfile as sf
-import numpy as np
+from torch import Tensor
 
 from traincore.data.sets.folder_dataset import FolderDataset
 
@@ -27,5 +28,7 @@ def test_folder_dataset_should_return_datums_of_max_frame_length(folder_of_audio
 
     item = ds[0]
     audio = item["mix"]
+
+    assert isinstance(audio, (Tensor, np.typing.NDArray))
     assert audio.dim() == 3
     assert audio.shape[-1] == n_samples

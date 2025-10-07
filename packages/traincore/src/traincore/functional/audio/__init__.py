@@ -2,6 +2,8 @@ import torch
 from torch import Tensor
 from torch.nn import functional as F
 
+__all__ = ["pad_sources"]
+
 
 def pad_sources(audio: Tensor, max_frames: int | None) -> Tensor:
     """Pads the final dimension of a time domain audio signal to the specified length."""

@@ -18,9 +18,7 @@ def mels_samples(request):
 
 
 @pytest.mark.parametrize("gan_cls", [MelGanGenerator])
-def test_should_have_a_valid_audio_output(
-    gan_cls, mels_samples: tuple[torch.Tensor, int]
-):
+def test_should_have_a_valid_audio_output(gan_cls, mels_samples: tuple[int, int]):
     n_mels, n_frames = mels_samples
     samples = torch.randn(1, 1, 1, n_frames)
     n_residual_layers = 2

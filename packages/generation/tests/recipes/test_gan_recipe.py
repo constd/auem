@@ -44,19 +44,15 @@ class TestGANRecipe:
     def test_should_do_a_training_step(self) -> None:
         trainer = l.Trainer(fast_dev_run=True)
 
-        model = nn.ModuleDict(
-            {
-                "generator": RandomGenerator(100, 100),
-                "discriminator": RandomDiscriminator(100, 1),
-            }
-        )
+        model = nn.ModuleDict({
+            "generator": RandomGenerator(100, 100),
+            "discriminator": RandomDiscriminator(100, 1),
+        })
 
-        loss = nn.ModuleDict(
-            {
-                "generator": RandomLoss(),
-                "discriminator": RandomLoss(),
-            }
-        )
+        loss = nn.ModuleDict({
+            "generator": RandomLoss(),
+            "discriminator": RandomLoss(),
+        })
 
         optimizer: dict[str, partial] = {
             "generator": partial(optim.Adam, lr=0.05),
