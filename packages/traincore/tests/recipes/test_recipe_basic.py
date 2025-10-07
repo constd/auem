@@ -42,7 +42,7 @@ def test_train_and_val_steps_should_return_loss():
     ds.setup()
     item = ds[0]
     # add a batch dimension
-    item["audio"] = item["audio"].unsqueeze(0).repeat(10, 1, 1)  # ty: ignore[possibly-unbound-attribute]
+    item["audio"] = item["audio"].repeat(10, 1, 1)  # ty: ignore[possibly-unbound-attribute]
 
     item["class"] = item["class"].unsqueeze(0).float().repeat(10, 1)  # ty: ignore[possibly-unbound-attribute]
 

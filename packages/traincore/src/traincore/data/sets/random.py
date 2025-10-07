@@ -58,14 +58,15 @@ class RandomAudioWithClassifierDataset(RandomAudioDataset):
         n_examples: int = 1,
         n_samples: int = 22050,
         n_channels: int = 1,
+        n_sources: int = 1,
         num_classes: int = 2,
     ):
-        super().__init__(n_examples, n_samples, n_channels)
+        super().__init__(n_examples, n_sources, n_samples, n_channels)
         self.num_classes = num_classes
         self.labels = None
 
     def setup(self, stage: str | None = None) -> None:
-        super().setup()
+        super().setup(stage)
         self.labels = torch.randint(0, self.num_classes, size=(self.n_examples,))
 
     def __getitem__(
