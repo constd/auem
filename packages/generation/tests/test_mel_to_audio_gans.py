@@ -1,8 +1,7 @@
 import pytest
 import torch
-
-from traincore.models.encoders.melspec import MelEncoder
 from generation.models.generators import MelGanGenerator
+from traincore.models.encoders.melspec import MelEncoder
 
 
 @pytest.fixture(
@@ -28,7 +27,7 @@ def test_should_have_a_valid_audio_output(
     generator = gan_cls(
         n_mels=n_mels,
         n_residual_layers=n_residual_layers,
-        encoder=MelEncoder(n_mels=n_mels),
+        encoder=MelEncoder(n_mels=n_mels.item()),
     )
 
     # y.shape = (batch, source, channels, time) <- time in samples
