@@ -1,6 +1,7 @@
+from typing import overload
+
 from einops import rearrange
 from jaxtyping import Float
-from typing import override
 from torch import Tensor
 from torch.nn import Module
 from torchaudio.transforms import MelSpectrogram
@@ -32,7 +33,16 @@ class MelEncoder(Module):
             sample_rate=self.sample_rate,
         )
 
-    @override
+    @overload
+    def forward(
+        self, x: Float[Tensor, "batch channel time"]
+    ) -> Float[Tensor, "batch channel frequency timeframes"]: ...
+
+    @overload
+    def forward(
+        self, x: Float[Tensor, "batch source channel time"]
+    ) -> Float[Tensor, "batch source channel frequency timeframes"]: ...
+
     def forward(
         self,
         x: Float[Tensor, "batch channel time"]
