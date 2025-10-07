@@ -3,9 +3,9 @@
 defaults:
   - /logger: null
   - /datamodule@data: generic
-  - /dataset@data.datasets.train.random: random_audio
-  - /dataset@data.datasets.validation.random: random_audio
-  - /dataset@data.datasets.test.random: random_audio
+  - /dataset@/data.datasets.train.random: random_audio
+  - /dataset@/data.datasets.validation.random: random_audio
+  - /dataset@/data.datasets.test.random: random_audio
   - /model: ganbase
   - /model@model.generator:
   - /model@model.discriminator:

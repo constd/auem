@@ -1,5 +1,5 @@
 # given a config, set up all the necessary parts, and run training
-from hydra import compose, initialize
+from hydra import main
 from hydra_zen import instantiate
 from lightning.pytorch import LightningDataModule, LightningModule, Trainer
 from lightning.pytorch.loggers import Logger
@@ -25,11 +25,17 @@ def train(config: DictConfig) -> None:
     trainer.fit(recipe, data)
 
 
+@main(config_path="configs", config_name="train_config")
+def get_config(config: DictConfig) -> DictConfig:
+    return config
+
+
 if __name__ == "__main__":
-    initialize(
-        config_path="configs",
-        job_name="train",
-        version_base="1.3",
-    )
-    config = compose(config_name="train_config")
+    # initialize(
+    #     job_name="train",
+    #     config_path="configs",
+    #     version_base="1.3",
+    # )
+    # config = compose(config_name="train_config")
+    config = get_config()
     train(config)
