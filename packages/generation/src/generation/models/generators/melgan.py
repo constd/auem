@@ -30,7 +30,7 @@ class ResnetBlock(nn.Module):
         return self.shortcut(x) + self.block(x)
 
 
-@model_store(name="melgan", n_mels=II("encoder.n_mels"))
+@model_store(name="melgan", n_mels=II(".encoder.n_mels"))
 class MelGanGenerator(nn.Module):
     ratios: ClassVar[list[int]] = [8, 8, 2, 2]
 
