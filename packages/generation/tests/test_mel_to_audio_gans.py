@@ -27,7 +27,7 @@ def test_should_have_a_valid_audio_output(
     generator = gan_cls(
         n_mels=n_mels,
         n_residual_layers=n_residual_layers,
-        encoder=MelEncoder(n_mels=n_mels.item()),
+        encoder=MelEncoder(n_mels=n_mels),
     )
 
     # y.shape = (batch, source, channels, time) <- time in samples

@@ -33,7 +33,7 @@ class FolderDataset:
 
     def prepare_data(self) -> None: ...
 
-    def setup(self, stage: str | None) -> None:
+    def setup(self, stage: str | None = None) -> None:
         self.data = list(self.data_dir.glob(f"**/*{self.suffix}"))
 
     def __len__(self) -> int:
@@ -42,10 +42,14 @@ class FolderDataset:
     def __getitem__(self, index: int) -> dict[str, Tensor | str]:
         datum = self.data[index]
 
+        # returns (channels, samples)
         audio, _ = load_audio(datum, target_sample_rate=self.target_sample_rate)
 
+        # (channels, samples)
         audio = pad_sources(audio, self.max_frames)
         # TODO
-        # audio = adjust_channels_to_target(audiol, self.num_channels)
+        # audio = adjust_channels_to_target(audio, self.num_channels)
+        # (source, channels, samples)
+        audio = audio.unsqueeze(0)
 
         return {"mix": audio, "id": f"{datum.stem}"}
