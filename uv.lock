@@ -2487,6 +2487,7 @@ source = { editable = "packages/traincore" }
 dependencies = [
     { name = "hydra-core" },
     { name = "hydra-zen" },
+    { name = "soundfile" },
     { name = "torch" },
     { name = "torchaudio" },
     { name = "torchvision" },
@@ -2496,6 +2497,7 @@ dependencies = [
 requires-dist = [
     { name = "hydra-core", specifier = ">=1.3.2" },
     { name = "hydra-zen", specifier = ">=0.15.0" },
+    { name = "soundfile", specifier = ">=0.13.1" },
     { name = "torch", specifier = ">=2.8.0" },
     { name = "torchaudio", specifier = ">=2.8.0" },
     { name = "torchvision", specifier = ">=0.23.0" },
