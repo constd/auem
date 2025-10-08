@@ -1,5 +1,4 @@
 # given a config, set up all the necessary parts, and run training
-from hydra import main
 from hydra_zen import instantiate
 from lightning.pytorch import LightningDataModule, LightningModule, Trainer
 from lightning.pytorch.loggers import Logger
@@ -25,17 +24,20 @@ def train(config: DictConfig) -> None:
     trainer.fit(recipe, data)
 
 
-@main(config_path="configs", config_name="train_config")
-def get_config(config: DictConfig) -> DictConfig:
-    return config
-
-
 if __name__ == "__main__":
-    # initialize(
-    #     job_name="train",
-    #     config_path="configs",
-    #     version_base="1.3",
-    # )
-    # config = compose(config_name="train_config")
+    # the following becomes the entrypoint to training
+    # this allows us to decouple hydra from train and
+    # still enable cli overrides when running the script directly
+    # https://stackoverflow.com/questions/60674012/how-to-get-a-hydra-config-without-using-hydra-main
+    import hydra
+    from omegaconf import OmegaConf
+
+    @hydra.main(config_path="configs", config_name="train_config")
+    def get_config(cfg: DictConfig) -> DictConfig:
+        # If you need resolving, it needs to be done here
+        # TODO: is this the place where we add more things to the config?
+        OmegaConf.resolve(cfg)
+        return cfg
+
     config = get_config()
     train(config)
