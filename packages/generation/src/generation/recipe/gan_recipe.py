@@ -2,6 +2,7 @@ from functools import partial
 from typing import Any
 
 from lightning.pytorch import LightningModule
+import torch
 from torch import Tensor
 from torch.nn import Module, ModuleDict
 from torch.optim import Optimizer
@@ -31,54 +32,72 @@ class GanTrainRecipe(LightningModule):
 
     def training_step(
         self,
-        batch: dict[str, Any],
+        batch: dict[str, dict[str, str | Tensor] | Tensor],
         batch_idx: int | None = None,
         dataloader_idx: int | None = None,
     ):
-        augmented_mix = batch["mix_augmented"]
-        clean_mix = batch["mix"]
-
         generator_optimizer, discriminator_optimizer = self.optimizers()
 
-        generated_mix = self.model.generator(augmented_mix)
+        total_generator_loss = torch.tensor(0.0, device=self.device)
+        total_discriminator_loss = torch.tensor(0.0, device=self.device)
 
-        discriminator_optimizer.zero_grad()
+        for dataset_name, dataset in batch.items():
+            augmented_mix = dataset["mix_augmented"]
+            clean_mix = dataset["mix"]
 
-        discriminator_output: dict[list[Tensor], list[Tensor]] = (
-            self.model.discriminator(clean_mix, generated_mix)
-        )
+            generated_mix = self.model.generator(augmented_mix)
 
-        discriminator_loss = self.loss.discriminator(discriminator_output)
+            discriminator_optimizer.zero_grad()
 
-        discriminator_loss.backward(retain_graph=True)
-        discriminator_optimizer.step()
+            discriminator_output: dict[list[Tensor], list[Tensor]] = (
+                self.model.discriminator(clean_mix, generated_mix)
+            )
 
-        # generator
-        generator_optimizer.zero_grad()
+            discriminator_loss = self.loss.discriminator(discriminator_output)
 
-        discriminator_output = self.model.discriminator(clean_mix, generated_mix)
-        generator_loss = self.loss.generator(
-            discriminator_output, clean_mix, generated_mix
-        )
+            discriminator_loss.backward(retain_graph=True)
+            discriminator_optimizer.step()
 
-        generator_loss.backward()
-        generator_optimizer.step()
+            # generator
+            generator_optimizer.zero_grad()
 
-        self.log("train/generator_loss", generator_loss)
-        self.log("train/discriminator_loss", discriminator_loss)
+            discriminator_output = self.model.discriminator(clean_mix, generated_mix)
+            generator_loss = self.loss.generator(
+                discriminator_output, clean_mix, generated_mix
+            )
 
-        return {"loss": generator_loss + discriminator_loss}
+            generator_loss.backward()
+            generator_optimizer.step()
+
+            total_generator_loss += generator_loss
+            total_discriminator_loss += discriminator_loss
+
+            self.log(f"train/generator_loss/{dataset_name}", generator_loss.item())
+            self.log(
+                f"train/discriminator_loss/{dataset_name}", discriminator_loss.item()
+            )
+
+        self.log("train/generator_loss/total", total_generator_loss)
+        self.log("train/discriminator_loss/total", total_discriminator_loss.item())
+
+        # return {"loss": total_generator_loss + total_discriminator_loss}
 
     def configure_optimizers(self):
         ret = []
         for m in ["generator", "discriminator"]:
+            model_ = getattr(self.model, m)
+
             opt_lrsch = {}
-            if isinstance(self.optimizer, dict) and isinstance(self.model, ModuleDict):
-                optimizer = self.optimizer[m](self.model[m].parameters())
+            if isinstance(
+                self.optimizer.get(m, None), (Optimizer, partial)
+            ) and isinstance(model_, Module):
+                optimizer = self.optimizer[m](model_.parameters())
                 opt_lrsch["optimizer"] = optimizer
                 if self.scheduler.get(m, None) is not None:
                     scheduler = self.scheduler[m].__dict__
                     scheduler["scheduler"] = scheduler["scheduler"](optimizer)
                     opt_lrsch["lr_scheduler"] = scheduler
                 ret.append(opt_lrsch)
+            else:
+                raise ValueError(f"Invalid optimizer or model for {m}")
         return ret

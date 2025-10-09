@@ -23,7 +23,7 @@ DEFAULT_CONV_LAYER_DEF: list[tuple[int, int, tuple[int, ...]]] = [
 DEFAULT_DENSE_LAYER_DEF: list[int] = [128]
 
 
-@model_store(name="simplcenn")
+@model_store(name="simplecnn")
 class SimpleCNNBase(AuemClassifierBase):
     """Configurable CNN Model."""
 

@@ -6,10 +6,10 @@ build-dev:
 	uv pip install -e . --verbose --force-reinstall
 
 python-lint:
-	uvx ruff check .
+	uvx ruff check . --preview
 
 python-format:
-	uvx ruff format --check .
+	uvx ruff format --check --preview .
 
 python-type:
 	uvx ty check
