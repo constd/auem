@@ -117,7 +117,15 @@ class MelGanGenerator(nn.Module):
 
         # x: (batch source channels frequency time)
         # TODO: reshape
-        b, s, c, f, t = X.shape
-        X = rearrange(X, "b s c f t -> (b s c) f t")
+        match X.dim():
+            case 4:
+                b, c, f, t = X.shape
+                s = 1
+                X = rearrange(X, "b c f t -> (b c) f t")
+            case 5:
+                b, s, c, f, t = X.shape
+                X = rearrange(X, "b s c f t -> (b s c) f t")
+            case _:
+                raise ValueError(f"Unsupported input dimension: {X.dim()}")
         X_heart = self.model(X)
         return rearrange(X_heart, "(b s c) 1 t -> b s c t", b=b, s=s, c=c)

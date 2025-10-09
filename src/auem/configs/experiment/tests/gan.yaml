@@ -24,15 +24,15 @@ data:
     train:
       random:
         n_examples: 5
-        n_samples: 2206
+        n_samples: 4412
     validation:
       random:
         n_examples: 2
-        n_samples: 2206
+        n_samples: 4412
     test:
       random:
         n_examples: 3
-        n_samples: 2206
+        n_samples: 4412
     batch_size:
       train: 2
       validation: 1
@@ -44,6 +44,6 @@ model:
       n_mels: 48
     n_mels: ${.encoder.n_mels}
     n_residual_layers: 2
-    max_frames: 2206
+    max_frames: 4412
   discriminator:
     num_samples: ${..generator.max_frames}

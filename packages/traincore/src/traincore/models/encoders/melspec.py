@@ -59,7 +59,7 @@ class MelEncoder(Module):
 
                 X = self.mel(x_)
 
-                return rearrange(X, "(b c) f t -> b c f t")
+                return rearrange(X, "(b c) f t -> b c f t", b=b, c=c)
 
             case 4:
                 b, s, c, _ = x.size()

@@ -83,7 +83,7 @@ class PeriodDiscriminator(nn.Module):
                     1024 * self.d_mult,
                     kernel_size=(self.kernel_size, 1),
                     stride=1,
-                    padding=((2, 0),),
+                    padding=(2, 0),
                 )
             ),
         ])
