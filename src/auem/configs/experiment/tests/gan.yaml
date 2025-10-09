@@ -3,15 +3,17 @@
 defaults:
   - /logger: null
   - /datamodule@data: generic
-  - /dataset@/data.datasets.train.random: random_audio
-  - /dataset@/data.datasets.validation.random: random_audio
-  - /dataset@/data.datasets.test.random: random_audio
+  - /dataset@data.datasets.train.random: random_audio
+  - /dataset@data.datasets.validation.random: random_audio
+  - /dataset@data.datasets.test.random: random_audio
   - /model: ganbase
-  - /model@model.generator:
-  - /model@model.discriminator:
+  - /model@model.generator: melgan
+  - /model/encoder@model.generator.encoder: mel
+  - /model@model.discriminator: discriminator/period
   - /recipe: gan
   - /criterion@recipe.loss: BCEWithLogitsLoss
-  - /optimizer@recipe.optimizer: Adam
+  - /optimizer@recipe.optimizer.generator: Adam
+  - /optimizer@recipe.optimizer.discriminator: Adam
   - /trainer: lit
 
 trainer:
@@ -23,21 +25,25 @@ data:
       random:
         n_examples: 5
         n_samples: 2206
-        num_classes: 5
     validation:
       random:
         n_examples: 2
         n_samples: 2206
-        num_classes: 5
     test:
       random:
         n_examples: 3
         n_samples: 2206
-        num_classes: 5
     batch_size:
       train: 2
       validation: 1
       test: 1
 
 model:
-  input_shape: [1, 1, 2206]
+  generator:
+    encoder:
+      n_mels: 48
+    n_mels: ${.encoder.n_mels}
+    n_residual_layers: 2
+    max_frames: 2206
+  discriminator:
+    num_samples: ${..generator.max_frames}

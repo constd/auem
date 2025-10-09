@@ -6,7 +6,7 @@ __all__ = ["GanBase"]
 
 
 @model_store(name="ganbase")
-class GanBase(nn.ModuleDict):
+class GanBase(nn.Module):
     def __init__(self, generator: nn.Module, discriminator: nn.Module):
         super().__init__()
         self.generator = generator
