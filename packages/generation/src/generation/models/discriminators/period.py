@@ -93,12 +93,12 @@ class PeriodDiscriminator(nn.Module):
 
     def forward(
         self,
-        x: Float[Tensor, "batch channel time"],
-        x_hat: Float[Tensor, "batch channel time"],
+        x: Float[Tensor, "batch source channel time"],
     ) -> DiscriminatorReturnType:
-        fmap = []
+        fmap: list[Float[Tensor, "..."]] = []
 
-        b, c, t = x.shape
+        b, *_, c, t = x.shape
+        x = x.squeeze(dim=1)
         if t % self.period != 0:
             n_pad = self.period - (t % self.period)
             x = F.pad(x, (0, n_pad), "reflect")
@@ -111,5 +111,5 @@ class PeriodDiscriminator(nn.Module):
             fmap.append(x)
         x = self.conv_post(x)
         fmap.append(x)
-        x = flatten(x, 1, -1)
-        return {"x": x, "fmap": fmap}
+        x: Float[Tensor, "..."] = flatten(x, 1, -1)
+        return {"estimate": x, "feature_map": fmap}

@@ -7,8 +7,19 @@ from generation.models.discriminators.protocol import (
     DiscriminatorProtocol,
     MultiDiscriminatorReturnType,
 )
+from generation.models.discriminators.period import PeriodDiscriminator
+from traincore.config_stores.models import model_store
 
 
+@model_store(name="multidiscriminator", group="model/discriminator")
+@model_store(
+    name="multiperiod",
+    group="model/discriminator",
+    discriminator=PeriodDiscriminator,
+    configs={
+        "period": [2, 3, 5, 7, 11],
+    },
+)
 class MultiDiscriminator(nn.Module):
     """
     A multi-discriminator module that applies multiple discriminators in parallel.
@@ -36,30 +47,24 @@ class MultiDiscriminator(nn.Module):
         self,
         # either get a non instantiated class or a half-instantiated class
         discriminator: type[DiscriminatorProtocol] | partial,
-        configs: list[dict[str, Any]],
+        configs: dict[str, Any],
     ):
         super().__init__()
         self.configs = configs
+        list_of_configs = [dict(zip(configs, t)) for t in zip(*configs.values())]
         self.discriminators = nn.ModuleList([
-            discriminator(**config) for config in self.configs
+            discriminator(**config) for config in list_of_configs
         ])
 
-    def forward(self, y: Tensor, y_hat: Tensor) -> MultiDiscriminatorReturnType:
-        y_d_rs = []
-        y_d_gs = []
-        fmap_rs = []
-        fmap_gs = []
-        for i, d in enumerate(self.discriminators):
-            y_d_r, fmap_r = d(y)
-            y_d_g, fmap_g = d(y_hat)
-            y_d_rs.append(y_d_r)
-            fmap_rs.append(fmap_r)
-            y_d_gs.append(y_d_g)
-            fmap_gs.append(fmap_g)
-
-        return {
-            "disc_rs": y_d_rs,
-            "disc_gs": y_d_gs,
-            "fmap_rs": fmap_rs,
-            "fmap_gs": fmap_gs,
+    def forward(self, y: Tensor, *args, **kwargs) -> MultiDiscriminatorReturnType:
+        output: MultiDiscriminatorReturnType = {
+            "estimates": [],
+            "feature_maps": [],
         }
+
+        for i, d in enumerate(self.discriminators):
+            current_output = d(y)
+            output["estimates"].append(current_output["estimate"])
+            output["feature_maps"].append(current_output["feature_map"])
+
+        return output
