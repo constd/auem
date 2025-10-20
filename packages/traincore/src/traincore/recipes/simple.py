@@ -45,7 +45,7 @@ class SimpleRecipe(LightningModule):
 
     def validation_step(
         self,
-        batch: dict[str, Any],
+        batch: dict[str, str | Tensor] | Tensor,
         batch_idx: int | None = None,
         *args,
         **kwargs,

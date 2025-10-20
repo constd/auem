@@ -66,7 +66,8 @@ class GanTrainRecipe(LightningModule):
             feature_matching_loss = self.loss.feature(discriminator_output)
 
             reconstruction_loss = self.loss.reconstruction(
-                generated_mix[..., : clean_mix.shape[-1]], clean_mix
+                generated_mix[..., : clean_mix.shape[-1]],  # ty: ignore[possibly-missing-attribute]
+                clean_mix,
             )
 
             total_loss = (
