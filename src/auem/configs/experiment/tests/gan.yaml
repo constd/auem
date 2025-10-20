@@ -1,49 +1,58 @@
 # @package _global_
 
 defaults:
-  - /logger: null
   - /datamodule@data: generic
   - /dataset@data.datasets.train.random: random_audio
   - /dataset@data.datasets.validation.random: random_audio
   - /dataset@data.datasets.test.random: random_audio
-  - /model: ganbase
-  - /model@model.generator: melgan
-  - /model/encoder@model.generator.encoder: mel
-  - /model@model.discriminator: discriminator/period
+  - /model@recipe.model: ganbase
+  - /model@recipe.model.generator: melgan
+  - /model/encoder@recipe.model.generator.encoder: mel
+  - /model/discriminator@recipe.model.discriminator: combiner
+  - /model/discriminator@recipe.model.discriminator.discriminators.mp: multiperiod
   - /recipe: gan
-  - /criterion@recipe.loss: BCEWithLogitsLoss
+  - /criterion@recipe.loss.generator: generator
+  - /criterion@recipe.loss.generator.loss: lsgan
+  - /criterion@recipe.loss.discriminator: discriminator
+  - /criterion@recipe.loss.discriminator.loss: lsgan
+  - /criterion@recipe.loss.feature: feature_matching
+  - /criterion@recipe.loss.reconstruction: multimel
   - /optimizer@recipe.optimizer.generator: Adam
   - /optimizer@recipe.optimizer.discriminator: Adam
+  # - /scheduler@recipe.scheduler.generator: Adam
+  # - /scheduler@recipe.scheduler.discriminator: Adam
   - /trainer: lit
-
-trainer:
-  fast_dev_run: false
+  - /logger@trainer.logger: csv
 
 data:
   datasets:
     train:
       random:
         n_examples: 5
-        n_samples: 4412
+        n_samples: 8191
     validation:
       random:
         n_examples: 2
-        n_samples: 4412
+        n_samples: 8191
     test:
       random:
         n_examples: 3
-        n_samples: 4412
+        n_samples: 8191
     batch_size:
       train: 2
-      validation: 1
+      validation: 1P
       test: 1
 
-model:
-  generator:
-    encoder:
-      n_mels: 48
-    n_mels: ${.encoder.n_mels}
-    n_residual_layers: 2
-    max_frames: 4412
-  discriminator:
-    num_samples: ${..generator.max_frames}
+recipe:
+  model:
+    generator:
+      encoder:
+        n_mels: ${..n_mels}
+      n_mels: 80
+      n_residual_layers: 2
+      max_frames: 4412
+
+trainer:
+  fast_dev_run: false
+  logger:
+    save_dir: "."

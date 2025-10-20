@@ -19,6 +19,7 @@ from generation.recipe.gan_recipe import *  # noqa
 from generation.models import *  # noqa
 from generation.models.generators import *  # noqa
 from generation.models.discriminators import *  # noqa
+from generation.losses import *  # noqa
 
 dataset_store.add_to_hydra_store()
 datamodule_store.add_to_hydra_store()
