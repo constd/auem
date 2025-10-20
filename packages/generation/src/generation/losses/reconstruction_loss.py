@@ -1,0 +1,62 @@
+from torch import nn, Tensor
+import torch
+import torchaudio
+from traincore.config_stores.criterions import criterion_store
+
+
+def safe_log(x: Tensor) -> Tensor:
+    return torch.log(torch.clip(x, min=1e-7))
+
+
+@criterion_store(name="mel")
+class MelSpecReconstructionLoss(nn.Module):
+    def __init__(
+        self,
+        sample_rate: int = 48000,
+        n_fft: int = 1024,
+        hop_length: int = 256,
+        n_mels: int = 100,
+    ):
+        super().__init__()
+        self.mel_spec = torchaudio.transforms.MelSpectrogram(
+            sample_rate=sample_rate,
+            n_fft=n_fft,
+            hop_length=hop_length,
+            n_mels=n_mels,
+            center=True,
+            power=1,
+        )
+
+    def forward(self, y_hat, y) -> Tensor:
+        mel_hat = safe_log(self.mel_spec(y_hat))
+        mel = safe_log(self.mel_spec(y))
+
+        loss = torch.nn.functional.l1_loss(mel, mel_hat)
+
+        return loss
+
+
+@criterion_store(name="multimel")
+class MultiMelSpecReconstructionLoss(nn.Module):
+    def __init__(
+        self,
+        sample_rate: int = 48000,
+        n_fft: list[int] = [1024, 2048, 4096],
+        hop_length: list[int] = [256, 512, 1024],
+        n_mels: list[int] = [80, 160, 320],
+    ):
+        super().__init__()
+        assert len(n_fft) == len(hop_length) == len(n_mels), (
+            "n_fft, hop_length, and n_mels must have the same length"
+        )
+        self.mel_specs = nn.ModuleList([
+            MelSpecReconstructionLoss(sample_rate, n_f, h_l, n_m)
+            for n_f, h_l, n_m in zip(n_fft, hop_length, n_mels)
+        ])
+
+    def forward(self, y_hat, y) -> Tensor:
+        loss = torch.zeros(1, device=y_hat.device, dtype=y_hat.dtype)
+        for mel_spec in self.mel_specs:
+            loss = loss + mel_spec(y_hat, y)
+        loss = loss / len(self.mel_specs)
+        return loss
