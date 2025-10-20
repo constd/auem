@@ -14,7 +14,7 @@ class GanTrainRecipe(LightningModule):
     def __init__(
         self,
         model: ModuleDict,
-        loss: Module,
+        loss: dict[str, Module],
         optimizer: dict[str, Optimizer | partial],
         scheduler: dict[str, Any] | None = {},
         ema: None | Module | partial = None,
@@ -22,7 +22,7 @@ class GanTrainRecipe(LightningModule):
     ):
         super().__init__()
         self.model = model
-        self.loss = loss
+        self.loss = ModuleDict(loss)
         self.optimizer = optimizer
         self.scheduler = scheduler
         self.ema = ema
@@ -42,45 +42,68 @@ class GanTrainRecipe(LightningModule):
         total_discriminator_loss = torch.tensor(0.0, device=self.device)
 
         for dataset_name, dataset in batch.items():
+            # get current batch
             augmented_mix = dataset["mix_augmented"]
             clean_mix = dataset["mix"]
 
             generated_mix = self.model.generator(augmented_mix)
 
-            discriminator_optimizer.zero_grad()
-
-            discriminator_output: dict[list[Tensor], list[Tensor]] = (
-                self.model.discriminator(clean_mix, generated_mix)
+            # discriminator
+            discriminator_output: dict[str, list[Tensor]] = self.model.discriminator(
+                clean_mix, generated_mix
             )
 
             discriminator_loss = self.loss.discriminator(discriminator_output)
 
-            discriminator_loss.backward(retain_graph=True)
+            discriminator_optimizer.zero_grad()
+            self.manual_backward(discriminator_loss["loss"], retain_graph=True)
             discriminator_optimizer.step()
 
             # generator
-            generator_optimizer.zero_grad()
-
             discriminator_output = self.model.discriminator(clean_mix, generated_mix)
-            generator_loss = self.loss.generator(
-                discriminator_output, clean_mix, generated_mix
+            generator_loss = self.loss.generator(discriminator_output)
+
+            feature_matching_loss = self.loss.feature(discriminator_output)
+
+            reconstruction_loss = self.loss.reconstruction(
+                generated_mix[..., : clean_mix.shape[-1]], clean_mix
             )
 
-            generator_loss.backward()
+            total_loss = (
+                generator_loss["loss"] + feature_matching_loss + reconstruction_loss
+            )
+
+            generator_optimizer.zero_grad()
+            self.manual_backward(total_loss)
             generator_optimizer.step()
 
-            total_generator_loss += generator_loss
-            total_discriminator_loss += discriminator_loss
+            total_generator_loss += generator_loss["loss"].item()
+            total_discriminator_loss += discriminator_loss["loss"].item()
 
-            self.log(f"train/generator_loss/{dataset_name}", generator_loss.item())
             self.log(
-                f"train/discriminator_loss/{dataset_name}", discriminator_loss.item()
+                f"train/loss/generator/{dataset_name}", generator_loss["loss"].item()
+            )
+            self.log(
+                f"train/loss/discriminator/{dataset_name}",
+                discriminator_loss["loss"].item(),
+            )
+            self.log(
+                f"train/loss/reconstruction/{dataset_name}", reconstruction_loss.item()
+            )
+            self.log(
+                f"train/loss/feature_matching/{dataset_name}",
+                reconstruction_loss.item(),
             )
 
-        self.log("train/generator_loss/total", total_generator_loss)
-        self.log("train/discriminator_loss/total", total_discriminator_loss.item())
+        self.log("train/loss/generator/total", total_generator_loss)
+        self.log("train/loss/discriminator/total", total_discriminator_loss.item())
 
-        # return {"loss": total_generator_loss + total_discriminator_loss}
+        # # Step schedulers
+        # scheduler_gen, scheduler_dis = self.lr_schedulers()
+        # if scheduler_gen:
+        #     scheduler_gen.step()
+        # if scheduler_dis:
+        #     scheduler_dis.step()
 
     def configure_optimizers(self):
         ret = []

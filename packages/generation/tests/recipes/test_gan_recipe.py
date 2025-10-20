@@ -67,6 +67,9 @@ class TestGANRecipe:
         dm = l.LightningDataModule.from_datasets(train_dataset=ds)
 
         gan_recipe = GanTrainRecipe(
-            model=model, loss=loss, optimizer=optimizer, scheduler={}
+            model=model,
+            loss=loss,
+            optimizer=optimizer,  # ty: ignore
+            scheduler={},
         )
         trainer.fit(model=gan_recipe, datamodule=dm)
