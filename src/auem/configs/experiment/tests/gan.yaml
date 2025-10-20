@@ -51,6 +51,12 @@ recipe:
       n_mels: 80
       n_residual_layers: 1
       max_frames: 4412
+      ratios: [512]
+    discriminator:
+      discriminators:
+        mp:
+          configs:
+            period: [2]
 
 trainer:
   fast_dev_run: true
