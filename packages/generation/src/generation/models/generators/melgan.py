@@ -32,7 +32,7 @@ class ResnetBlock(nn.Module):
 
 @model_store(name="melgan", n_mels=II(".encoder.n_mels"))
 class MelGanGenerator(nn.Module):
-    ratios: ClassVar[list[int]] = [8, 8, 2, 2]
+    ratios: ClassVar[list[int]] = [8, 8, 2, 2, 2]
 
     # TODO: should we have a base class?
     def __init__(
@@ -55,7 +55,7 @@ class MelGanGenerator(nn.Module):
         self.sample_rate = sample_rate
         self.max_frames = max_frames
         self.in_out_kernel_size = 7
-        self.hop_length = np.prod(self.ratios)
+        self.hop_length = int(np.prod(self.ratios))
         mult = int(
             2 ** len(self.ratios)
         )  # mult implies how quickly the change of channels happens in the upscaling
