@@ -1,11 +1,10 @@
-from typing import ClassVar
 from omegaconf import II
+from jaxtyping import Float
 
 import numpy as np
 from einops import rearrange
 from torch import nn, Tensor
 from torch.nn.utils.parametrizations import weight_norm
-
 from traincore.models.encoders.protocol import EncoderProtocol
 from traincore.config_stores.models import model_store
 
@@ -32,12 +31,11 @@ class ResnetBlock(nn.Module):
 
 @model_store(name="melgan", n_mels=II(".encoder.n_mels"))
 class MelGanGenerator(nn.Module):
-    ratios: ClassVar[list[int]] = [8, 8, 2, 2]
-
     # TODO: should we have a base class?
     def __init__(
         self,
         n_mels: int = 80,
+        ratios: list[int] = [8, 8, 2, 2, 2],
         pad_input: bool = True,
         n_residual_layers: int = -1,
         output_channels: int = 1,
@@ -49,13 +47,14 @@ class MelGanGenerator(nn.Module):
         self.encoder = encoder
 
         self.n_mels = n_mels
+        self.ratios = ratios
         self.pad_input = pad_input
         self.n_residual_layers = n_residual_layers
         self.output_channels = output_channels
         self.sample_rate = sample_rate
         self.max_frames = max_frames
         self.in_out_kernel_size = 7
-        self.hop_length = np.prod(self.ratios)
+        self.hop_length = int(np.prod(self.ratios))
         mult = int(
             2 ** len(self.ratios)
         )  # mult implies how quickly the change of channels happens in the upscaling
@@ -109,15 +108,22 @@ class MelGanGenerator(nn.Module):
         ]
         self.model = nn.Sequential(*model)
 
-    def forward(self, x: Tensor) -> Tensor:
-        if self.encoder is not None:
-            X = self.encoder(x)
-        else:
-            X = x
+    def forward(
+        self,
+        x: Float[Tensor, "batch channel time"],
+    ) -> Float[Tensor, "batch source channel generated_time"]:
+        X = self.encoder(x)
 
         # x: (batch source channels frequency time)
-        # TODO: reshape
-        b, s, c, f, t = X.shape
-        X = rearrange(X, "b s c f t -> (b s c) f t")
+        match X.dim():
+            case 4:
+                b, c, f, t = X.shape
+                s = 1
+                X = rearrange(X, "b c f t -> (b c) f t")
+            case 5:
+                b, s, c, f, t = X.shape
+                X = rearrange(X, "b s c f t -> (b s c) f t")
+            case _:
+                raise ValueError(f"Unsupported input dimension: {X.dim()}")
         X_heart = self.model(X)
         return rearrange(X_heart, "(b s c) 1 t -> b s c t", b=b, s=s, c=c)

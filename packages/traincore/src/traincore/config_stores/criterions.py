@@ -1,4 +1,4 @@
-from hydra_zen import ZenStore, builds
+from hydra_zen import ZenStore
 from hydra_zen.third_party.beartype import (
     validates_with_beartype,
 )
@@ -42,9 +42,6 @@ from traincore.criterions import *  # noqa
 
 for criterion in available_criterions:
     criterion_store(
-        builds(
-            getattr(nn, criterion),
-            populate_full_signature=True,
-        ),
+        getattr(nn, criterion),
         name=criterion,
     )

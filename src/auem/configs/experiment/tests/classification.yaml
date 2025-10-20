@@ -6,7 +6,7 @@ defaults:
   - /dataset@data.datasets.train.random: random_class
   - /dataset@data.datasets.validation.random: random_class
   - /dataset@data.datasets.test.random: random_class
-  - /model: simplenn
+  - /model@recipe.model: simplenn
   - /recipe: simple
   - /criterion@recipe.loss: BCEWithLogitsLoss
   - /optimizer@recipe.optimizer: Adam
@@ -37,6 +37,7 @@ data:
       validation: 1
       test: 1
 
-model:
-  input_shape: [1, 1, 2206]
-  num_classes: 5
+recipe:
+  model:
+    input_shape: [1, 1, 2206]
+    num_classes: 5

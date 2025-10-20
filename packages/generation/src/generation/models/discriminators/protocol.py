@@ -1,36 +1,47 @@
-from typing import TypedDict
+from typing import TypedDict, runtime_checkable, Protocol
 
 from jaxtyping import Float
 from torch import Tensor
-from traincore.models.protocol import AuemModelProtocol
 
 __all__ = [
     "DiscriminatorProtocol",
     "DiscriminatorReturnType",
     "MultiDiscriminatorProtocol",
     "MultiDiscriminatorReturnType",
+    "CombinerDiscriminatorReturnType",
+    "CombinerDiscriminatorProtocol",
 ]
 
 
 class DiscriminatorReturnType(TypedDict):
-    x: Float[Tensor, "..."]
-    fmap: list[Float[Tensor, "..."]]
+    estimate: Float[Tensor, "..."]
+    feature_map: list[Float[Tensor, "..."]]
 
 
-class DiscriminatorProtocol(AuemModelProtocol):
+@runtime_checkable
+class DiscriminatorProtocol(Protocol):
     def forward(
-        self, x: Float[Tensor, "..."], x_hat: Float[Tensor, "..."]
+        self, x: Float[Tensor, "batch channel time"]
     ) -> DiscriminatorReturnType: ...
 
 
 class MultiDiscriminatorReturnType(TypedDict):
-    disc_rs: list[Float[Tensor, "..."]]
-    fmap_rs: list[list[Float[Tensor, "..."]]]
-    disc_gs: list[Float[Tensor, "..."]]
-    fmap_gs: list[list[Float[Tensor, "..."]]]
+    estimates: list[Float[Tensor, "..."]]
+    feature_maps: list[list[Float[Tensor, "..."]]]
 
 
-class MultiDiscriminatorProtocol(AuemModelProtocol):
-    def forward(
-        self, x: Float[Tensor, "..."], x_hat: Float[Tensor, "..."]
-    ) -> MultiDiscriminatorReturnType: ...
+@runtime_checkable
+class MultiDiscriminatorProtocol(Protocol):
+    def forward(self, x: Float[Tensor, "..."]) -> MultiDiscriminatorReturnType: ...
+
+
+class CombinerDiscriminatorReturnType(TypedDict):
+    estimates_real: list[Float[Tensor, "..."]]
+    estimates_generated: list[Float[Tensor, "..."]]
+    feature_maps_real: list[Float[Tensor, "..."]]
+    feature_maps_generated: list[Float[Tensor, "..."]]
+
+
+@runtime_checkable
+class CombinerDiscriminatorProtocol(Protocol):
+    def forward(self, x: Float[Tensor, "..."]) -> CombinerDiscriminatorReturnType: ...

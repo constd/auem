@@ -15,6 +15,12 @@ from traincore.config_stores.recipes import recipe_store
 from traincore.config_stores.schedulers import scheduler_store
 from traincore.config_stores.trainers import trainer_store
 
+from generation.recipe.gan_recipe import *  # noqa
+from generation.models import *  # noqa
+from generation.models.generators import *  # noqa
+from generation.models.discriminators import *  # noqa
+from generation.losses import *  # noqa
+
 dataset_store.add_to_hydra_store()
 datamodule_store.add_to_hydra_store()
 logger_store.add_to_hydra_store()
@@ -32,11 +38,10 @@ recipe_store.add_to_hydra_store()
 class MainConfigStore:
     name: str = "here is a name for the training run"
     # run_id: str = II("hash_my_config:${},${},${}")
+    seed: int = 1337
     data: Any = MISSING
-    model: Any = MISSING
     recipe: Any = MISSING
     trainer: Any = MISSING
-    logger: Any = MISSING
 
 
 train_store = ConfigStore.instance()

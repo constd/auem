@@ -16,7 +16,7 @@ def test_RandomAudioDataset_should_return_audio_like_data():
 
     assert len(ds) == n_examples
     item: dict[str, str | Tensor] = ds[0]
-    assert item["audio"].shape == (1, 1, n_samples)  # ty: ignore[possibly-unbound-attribute]
+    assert item["audio"].shape == (1, 1, n_samples)  # ty: ignore[possibly-missing-attribute]
 
 
 def test_RandomAudioWithClassifierDataset_should_return_audio_and_class():
@@ -32,5 +32,5 @@ def test_RandomAudioWithClassifierDataset_should_return_audio_and_class():
 
     assert len(ds) == n_examples
     item: dict[str, str | Tensor] | Tensor = ds[0]
-    assert item["audio"].shape == (1, 1, n_samples)  # ty: ignore[possibly-unbound-attribute]
-    assert item["class"].size() == (num_classes,)  # ty: ignore[possibly-unbound-attribute]
+    assert item["audio"].shape == (1, 1, n_samples)  # ty: ignore[possibly-missing-attribute]
+    assert item["class"].size() == (num_classes,)  # ty: ignore[possibly-missing-attribute]
