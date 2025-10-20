@@ -31,7 +31,7 @@ if __name__ == "__main__":
     from omegaconf import OmegaConf
 
     @hydra.main(config_path="configs", config_name="train_config")
-    def run_train_with_config(cfg: DictConfig) -> DictConfig:
+    def run_train_with_config(cfg: DictConfig):
         # If you need resolving, it needs to be done here
         # TODO: is this the place where we add more things to the config?
         OmegaConf.resolve(cfg)
