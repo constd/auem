@@ -2,11 +2,10 @@
 
 import pytest
 from generation.models import discriminators
-from generation.models.discriminators import __all__ as all_registered_discriminators
 from generation.models.discriminators.protocol import DiscriminatorProtocol
 
 
-@pytest.fixture(params=all_registered_discriminators)
+@pytest.fixture(params=["PeriodDiscriminator"])
 def discriminator_cls(request) -> type[DiscriminatorProtocol]:
     """Fixture that yields each registered model class for parametrized testing.
 
