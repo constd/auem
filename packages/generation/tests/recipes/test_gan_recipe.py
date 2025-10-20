@@ -5,6 +5,9 @@ from generation.recipe.gan_recipe import GanTrainRecipe
 from torch import Tensor, nn, optim
 from torch.nn.modules.loss import _WeightedLoss
 from traincore.data.sets.random import RandomAudioDataset
+from traincore.data.modules import GenericDataModule
+from generation.models.discriminators.combiner import CombinerDiscriminator
+from generation.losses.adversarial_loss import FeatureMatchingLoss
 
 
 class RandomGenerator(nn.Module):
@@ -23,21 +26,21 @@ class RandomDiscriminator(nn.Module):
         self.encoder = nn.Linear(in_features, 10)
         self.decoder = nn.Linear(10, out_features)
 
-    def forward(self, x: Tensor, x_hat: Tensor | None = None) -> dict[str, Tensor]:
-        return {"test": self.decoder(self.encoder(x))}
+    def forward(
+        self, x: Tensor, x_hat: Tensor | None = None
+    ) -> dict[str, Tensor | list[Tensor]]:
+        out = self.decoder(self.encoder(x))
+        return {"estimates": out, "feature_maps": list(out)}
 
 
 class RandomLoss(_WeightedLoss):
-    def __init__(self):
-        super().__init__()
-
     def forward(
         self,
         discriminator_outut: dict[str, Tensor],
         clean_mix: Tensor | None = None,
         generated_mix: Tensor | None = None,
-    ) -> Tensor:
-        return discriminator_outut["test"]
+    ) -> dict[str, Tensor]:
+        return {"loss": discriminator_outut["estimates_real"][0].mean()}
 
 
 class TestGANRecipe:
@@ -46,25 +49,35 @@ class TestGANRecipe:
 
         model = nn.ModuleDict({
             "generator": RandomGenerator(100, 100),
-            "discriminator": RandomDiscriminator(100, 1),
+            "discriminator": CombinerDiscriminator(
+                discriminators={"test": RandomDiscriminator(100, 1)}
+            ),
         })
 
-        loss = nn.ModuleDict({
+        loss = {
             "generator": RandomLoss(),
             "discriminator": RandomLoss(),
-        })
+            "feature": FeatureMatchingLoss(),
+            "reconstruction": nn.L1Loss(),
+        }
 
         optimizer: dict[str, partial] = {
             "generator": partial(optim.Adam, lr=0.05),
             "discriminator": partial(optim.Adam, lr=0.05),
         }
 
-        ds = RandomAudioDataset(
+        train_ds = RandomAudioDataset(
             n_examples=100, n_sources=2, n_channels=1, n_samples=100
         )
-        ds.setup()
+        train_ds.setup()
 
-        dm = l.LightningDataModule.from_datasets(train_dataset=ds)
+        dm = GenericDataModule(
+            datasets={
+                "train": {"main": train_ds},
+                "batch_size": {"train": 1},
+            },
+            num_workers=1,
+        )
 
         gan_recipe = GanTrainRecipe(
             model=model,

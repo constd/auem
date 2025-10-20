@@ -13,7 +13,7 @@ from traincore.config_stores.recipes import recipe_store
 class GanTrainRecipe(LightningModule):
     def __init__(
         self,
-        model: ModuleDict,
+        model: Module | ModuleDict,
         loss: dict[str, Module],
         optimizer: dict[str, Optimizer | partial],
         scheduler: dict[str, Any] | None = {},

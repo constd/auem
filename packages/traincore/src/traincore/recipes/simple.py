@@ -7,21 +7,30 @@ from lightning import LightningModule
 from torch import Tensor, nn, optim
 
 from traincore.config_stores.recipes import recipe_store
+from torch.optim.lr_scheduler import LRScheduler
 
 
 @recipe_store(name="simple")
 class SimpleRecipe(LightningModule):
     def __init__(
-        self, model: nn.Module, loss: nn.Module, optimizer: optim.Optimizer | partial
+        self,
+        model: nn.Module | nn.ModuleDict,
+        loss: nn.Module | dict[str, nn.Module],
+        optimizer: optim.Optimizer | partial | dict[str, optim.Optimizer | partial],
+        scheduler: LRScheduler
+        | partial
+        | dict[str, LRScheduler | partial]
+        | None = None,
     ):
         super().__init__()
         self.model = model
         self.loss = loss
         self.optimizer = optimizer
+        self.scheduler = scheduler
 
     def training_step(
         self,
-        batch: dict[str, dict[str, str | Tensor] | Tensor],
+        batch: dict[str, Any],
         batch_idx: int | None = None,
         *args,
         **kwargs,
@@ -36,7 +45,7 @@ class SimpleRecipe(LightningModule):
 
     def validation_step(
         self,
-        batch: dict[str, str | Tensor] | Tensor,
+        batch: dict[str, Any],
         batch_idx: int | None = None,
         *args,
         **kwargs,
@@ -48,7 +57,7 @@ class SimpleRecipe(LightningModule):
 
     def test_step(
         self,
-        batch: dict[str, str | Tensor] | Tensor,
+        batch: dict[str, Any],
         batch_idx: int | None = None,
         *args,
         **kwargs,

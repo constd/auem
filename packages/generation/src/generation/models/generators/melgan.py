@@ -38,6 +38,7 @@ class MelGanGenerator(nn.Module):
     def __init__(
         self,
         n_mels: int = 80,
+        ratios: list[int] = [8, 8, 2, 2, 2],
         pad_input: bool = True,
         n_residual_layers: int = -1,
         output_channels: int = 1,

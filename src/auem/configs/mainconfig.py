@@ -38,11 +38,10 @@ recipe_store.add_to_hydra_store()
 class MainConfigStore:
     name: str = "here is a name for the training run"
     # run_id: str = II("hash_my_config:${},${},${}")
+    seed: int = 1337
     data: Any = MISSING
-    model: Any = MISSING
     recipe: Any = MISSING
     trainer: Any = MISSING
-    logger: Any = MISSING
 
 
 train_store = ConfigStore.instance()
