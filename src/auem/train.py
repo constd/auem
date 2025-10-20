@@ -3,7 +3,7 @@ from hydra_zen import instantiate
 from lightning.pytorch import LightningDataModule, LightningModule, Trainer
 from lightning.pytorch.loggers import Logger
 from omegaconf import DictConfig
-from torch.nn import Module
+
 
 from auem.configs.mainconfig import train_store  # noqa
 
@@ -15,9 +15,7 @@ def train(config: DictConfig) -> None:
 
     data: LightningDataModule = instantiate(config.data)
 
-    model: Module = instantiate(config.model)
-
-    recipe: LightningModule = instantiate(config.recipe, model=model)
+    recipe: LightningModule = instantiate(config.recipe)
 
     trainer: Trainer = instantiate(config.trainer, logger=loggers)
 
