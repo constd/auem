@@ -46,7 +46,7 @@ class RandomAudioDataset(torch.utils.data.Dataset):
             return {
                 "audio": self.data[index],
                 "mix_augmented": self.data[index].mean(0),
-                "mix": self.data[index].mean(0),
+                "target": self.data[index].mean(0, keepdim=True),
             }
         return {}
 

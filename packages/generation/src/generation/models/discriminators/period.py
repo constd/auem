@@ -93,7 +93,7 @@ class PeriodDiscriminator(nn.Module):
 
     def forward(
         self,
-        x: Float[Tensor, "batch channel time"],
+        x: Float[Tensor, "batch source channel time"],
     ) -> DiscriminatorReturnType:
         fmap: list[Float[Tensor, "..."]] = []
 
