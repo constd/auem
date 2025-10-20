@@ -7,7 +7,7 @@ from torch.optim import lr_scheduler
 __all__ = ["scheduler_store"]
 
 scheduler_store: ZenStore = ZenStore(name="scheduler")(
-    group="optimizer",
+    group="scheduler",
     populate_full_signature=True,
     zen_wrappers=validates_with_beartype,
     hydra_convert="all",
@@ -39,5 +39,6 @@ for scheduler in available_schedulers:
             getattr(lr_scheduler, scheduler),
             populate_full_signature=True,
             zen_partial=True,
-        )
+        ),
+        name=scheduler,
     )

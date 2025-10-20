@@ -30,7 +30,7 @@ class SimpleRecipe(LightningModule):
         for _, dataset in batch.items():
             x, y = dataset["audio"], dataset["class"]
             y_hat = self.model(x)
-            loss = self.loss(y_hat, y.float())  # ty: ignore[possibly-unbound-attribute]
+            loss = self.loss(y_hat, y.float())  # ty: ignore[possibly-missing-attribute]
             total_loss += loss
         return {"loss": total_loss}
 
@@ -43,7 +43,7 @@ class SimpleRecipe(LightningModule):
     ) -> Tensor | Mapping[str, Any] | None:
         x, y = batch["audio"], batch["class"]
         y_hat = self.model(x)
-        loss = self.loss(y_hat.float(), y.float())  # ty: ignore[possibly-unbound-attribute]
+        loss = self.loss(y_hat.float(), y.float())  # ty: ignore[possibly-missing-attribute]
         return {"loss": loss}
 
     def test_step(

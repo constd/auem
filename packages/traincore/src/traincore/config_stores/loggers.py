@@ -1,4 +1,4 @@
-from hydra_zen import ZenStore, builds
+from hydra_zen import ZenStore
 from hydra_zen.third_party.beartype import (
     validates_with_beartype,
 )
@@ -16,10 +16,8 @@ logger_store: ZenStore = ZenStore()(
 # TBD: do we need this? these should be coming from other libraries
 # from traincore.loggers import *  # noqa
 
-logger_store(builds(llog.CSVLogger), name="csv", populate_full_signature=True)
-logger_store(builds(llog.CometLogger), name="comet", populate_full_signature=True)
-logger_store(builds(llog.MLFlowLogger), name="mlflow", populate_full_signature=True)
-logger_store(
-    builds(llog.TensorBoardLogger), name="tensorboard", populate_full_signature=True
-)
-logger_store(builds(llog.WandbLogger), name="wandb", populate_full_signature=True)
+logger_store(llog.CSVLogger, name="csv", populate_full_signature=True)
+logger_store(llog.CometLogger, name="comet", populate_full_signature=True)
+logger_store(llog.MLFlowLogger, name="mlflow", populate_full_signature=True)
+logger_store(llog.TensorBoardLogger, name="tensorboard", populate_full_signature=True)
+logger_store(llog.WandbLogger, name="wandb", populate_full_signature=True)
