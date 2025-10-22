@@ -23,7 +23,7 @@ def test_gan_recipe_with_random_data():
         version_base="1.3",
     ):
         config = compose(
-            config_name="train_config", overrides=["+experiment=tests/gan"]
+            config_name="train_config", overrides=["+experiment=tests/gan_mel"]
         )
 
     auem.train.train(config)

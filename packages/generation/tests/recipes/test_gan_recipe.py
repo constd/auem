@@ -1,13 +1,13 @@
 from functools import partial
 
 import lightning as l
+from generation.losses.adversarial_loss import FeatureMatchingLoss
+from generation.models.discriminators.combiner import CombinerDiscriminator
 from generation.recipe.gan_recipe import GanTrainRecipe
 from torch import Tensor, nn, optim
 from torch.nn.modules.loss import _WeightedLoss
-from traincore.data.sets.random import RandomAudioDataset
 from traincore.data.modules import GenericDataModule
-from generation.models.discriminators.combiner import CombinerDiscriminator
-from generation.losses.adversarial_loss import FeatureMatchingLoss
+from traincore.data.sets.random import RandomAudioDataset
 
 
 class RandomGenerator(nn.Module):
@@ -45,7 +45,8 @@ class RandomLoss(_WeightedLoss):
 
 class TestGANRecipe:
     def test_should_do_a_training_step(self) -> None:
-        trainer = l.Trainer(fast_dev_run=True)
+        device: str = "cpu"
+        trainer = l.Trainer(fast_dev_run=True, accelerator=device)
 
         model = nn.ModuleDict({
             "generator": RandomGenerator(100, 100),

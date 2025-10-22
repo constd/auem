@@ -15,14 +15,13 @@ callback_store: ZenStore = ZenStore()(
 
 from traincore.callbacks import *  # noqa
 
+callback_store(lcall.EarlyStopping, name="earlystop", populate_full_signature=True)
+callback_store(lcall.ModelSummary, name="modelsummary", populate_full_signature=True)
+callback_store(lcall.RichProgressBar, name="rich", populate_full_signature=True)
 callback_store(
-    builds(lcall.EarlyStopping), name="earlystop", populate_full_signature=True
-)
-callback_store(
-    builds(lcall.ModelSummary), name="modelsummary", populate_full_signature=True
-)
-callback_store(builds(lcall.RichProgressBar), name="rich", populate_full_signature=True)
-callback_store(
-    builds(lcall.ModelCheckpoint, name="checkpoint", save_top_k=10, save_last=True),
+    lcall.ModelCheckpoint,
+    name="checkpoint",
+    save_top_k=10,
+    save_last=True,
     populate_full_signature=True,
 )

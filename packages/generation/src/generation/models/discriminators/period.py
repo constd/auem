@@ -32,6 +32,7 @@ class PeriodDiscriminator(nn.Module):
 
         self.sample_rate = sample_rate
         self.num_samples = num_samples
+
         self.period = period
         self.kernel_size = kernel_size
         self.stride = stride

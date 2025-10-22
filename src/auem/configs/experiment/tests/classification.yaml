@@ -1,43 +1,44 @@
 # @package _global_
 
 defaults:
-  - /logger: null
-  - /datamodule@data: generic
-  - /dataset@data.datasets.train.random: random_class
-  - /dataset@data.datasets.validation.random: random_class
-  - /dataset@data.datasets.test.random: random_class
-  - /model@recipe.model: simplenn
-  - /recipe: simple
-  - /criterion@recipe.loss: BCEWithLogitsLoss
-  - /optimizer@recipe.optimizer: Adam
-  - /trainer: lit
+    - /logger: null
+    - /datamodule@data: generic
+    - /dataset@data.datasets.train.random: random_class
+    - /dataset@data.datasets.validation.random: random_class
+    - /dataset@data.datasets.test.random: random_class
+    - /model@recipe.model: simplenn
+    - /recipe: simple
+    - /criterion@recipe.loss: BCEWithLogitsLoss
+    - /optimizer@recipe.optimizer: Adam
+    - /trainer: lit
 
 trainer:
-  fast_dev_run: true
+    fast_dev_run: true
+    accelerator: cpu
 
 data:
-  datasets:
-    train:
-      random:
-        n_examples: 5
-        n_samples: 2206
-        num_classes: 5
-    validation:
-      random:
-        n_examples: 2
-        n_samples: 2206
-        num_classes: 5
-    test:
-      random:
-        n_examples: 3
-        n_samples: 2206
-        num_classes: 5
-    batch_size:
-      train: 2
-      validation: 1
-      test: 1
+    datasets:
+        train:
+            random:
+                n_examples: 5
+                n_samples: 2206
+                num_classes: 5
+        validation:
+            random:
+                n_examples: 2
+                n_samples: 2206
+                num_classes: 5
+        test:
+            random:
+                n_examples: 3
+                n_samples: 2206
+                num_classes: 5
+        batch_size:
+            train: 2
+            validation: 1
+            test: 1
 
 recipe:
-  model:
-    input_shape: [1, 1, 2206]
-    num_classes: 5
+    model:
+        input_shape: [1, 1, 2206]
+        num_classes: 5

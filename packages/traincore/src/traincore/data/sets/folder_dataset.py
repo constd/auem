@@ -19,9 +19,9 @@ __all__ = ["FolderDataset"]
 class FolderDataset:
     def __init__(
         self,
-        target_sample_rate: int = 44100,
+        target_sample_rate: float = 44100,
         num_channels: int = 1,
-        max_frames: int = 44100,
+        max_frames: int | None = 44100,
         name: str = "AFolderDataset",
         data_dir: str | Path = "/data/dataset_dir",
         suffix: str = ".wav",
@@ -32,11 +32,12 @@ class FolderDataset:
         self.name = name
         self.data_dir = Path(data_dir)
         self.suffix = suffix
+        self.data: list = []
 
     def prepare_data(self) -> None: ...
 
     def setup(self, stage: str | None = None) -> None:
-        self.data = list(self.data_dir.glob(f"**/*{self.suffix}"))
+        self.data = sorted(list(self.data_dir.rglob(f"*{self.suffix}")))
 
     def __len__(self) -> int:
         return len(self.data)
@@ -45,13 +46,22 @@ class FolderDataset:
         datum = self.data[index]
 
         # returns (channels, samples)
-        audio, _ = load_audio(datum, target_sample_rate=self.target_sample_rate)
-
+        audio, _ = load_audio(
+            datum,
+            target_sample_rate=self.target_sample_rate,
+            max_frames=self.max_frames,
+        )
         # (channels, samples)
         audio = pad_sources(audio, self.max_frames)
         # TODO
         # audio = adjust_channels_to_target(audio, self.num_channels)
+        audio = audio.mean(0, keepdim=True)
         # (source, channels, samples)
         audio = audio.unsqueeze(0)
 
-        return {"mix": audio, "id": f"{datum.stem}"}
+        return {
+            "mix": audio,
+            "mix_augmented": audio,
+            "target": audio,
+            "id": f"{datum.stem}",
+        }
