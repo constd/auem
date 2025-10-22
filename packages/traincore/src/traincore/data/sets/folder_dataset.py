@@ -1,3 +1,4 @@
+import random
 from pathlib import Path
 
 from omegaconf import II
@@ -5,7 +6,7 @@ from torch import Tensor
 
 from traincore.config_stores.datasets import dataset_store
 from traincore.functional.audio import pad_sources
-from traincore.io.audio import load_audio
+from traincore.io.audio import load_audio, get_audio_info
 
 __all__ = ["FolderDataset"]
 
@@ -44,6 +45,12 @@ class FolderDataset:
 
     def __getitem__(self, index: int) -> dict[str, Tensor | str]:
         datum = self.data[index]
+
+        # get info from audio file
+        audio_info = get_audio_info(datum)
+        num_frames = audio_info["frames"]
+        start, end = 0, max(num_frames - self.max_frames, 0)
+        start_sample = random.randint(start, end)
 
         # returns (channels, samples)
         audio, _ = load_audio(
