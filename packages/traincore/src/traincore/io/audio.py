@@ -11,8 +11,8 @@ def load_audio(
     target_sample_rate: float | int | None = None,
     max_frames: int | None = None,
 ) -> tuple[Float[Tensor, "channel time"], int | float]:
-    start, stop = 0, None
-    with AudioFile(str(audio_path)).resampled_to(float(target_sample_rate)) as af:
+    start = 0
+    with AudioFile(str(audio_path)).resampled_to(float(target_sample_rate)) as af:  # ty: ignore[unresolved-attribute, no-matching-overload]
         if max_frames is not None:
             start = randint(0, af.frames) if af.frames > max_frames else 0
 

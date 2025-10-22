@@ -1,5 +1,5 @@
 import lightning.pytorch.callbacks as lcall
-from hydra_zen import ZenStore, builds
+from hydra_zen import ZenStore
 from hydra_zen.third_party.beartype import (
     validates_with_beartype,
 )

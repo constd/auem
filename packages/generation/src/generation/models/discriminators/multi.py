@@ -72,9 +72,9 @@ class MultiDiscriminator(nn.Module):
         list_value_keys = [k for k in self.configs if isinstance(self.configs[k], list)]
         if list_value_keys:
             n_discriminators = len(self.configs[list_value_keys[0]])
-            if not all(
-                [n_discriminators == len(self.configs[k]) for k in list_value_keys]
-            ):
+            if not all([
+                n_discriminators == len(self.configs[k]) for k in list_value_keys
+            ]):
                 raise ValueError("All list values must have the same length.")
         else:
             n_discriminators = 1
@@ -88,9 +88,9 @@ class MultiDiscriminator(nn.Module):
                 c[k] = self.configs[k][i]
             list_of_configs.append(c)
 
-        self.discriminators = nn.ModuleList(
-            [discriminator(**config) for config in list_of_configs]
-        )
+        self.discriminators = nn.ModuleList([
+            discriminator(**config) for config in list_of_configs
+        ])
 
     def forward(self, y: Tensor, *args, **kwargs) -> MultiDiscriminatorReturnType:
         output: MultiDiscriminatorReturnType = {

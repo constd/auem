@@ -47,7 +47,7 @@ class GanTrainRecipe(LightningModule):
             clean_mix = dataset["target"]
 
             generated_mix = self.model.generator(augmented_mix)
-            generated_mix = generated_mix[..., : clean_mix.shape[-1]]
+            generated_mix = generated_mix[..., : clean_mix.shape[-1]]  # ty: ignore[possibly-missing-attribute]
 
             # discriminator
             discriminator_output: dict[str, list[Tensor]] = self.model.discriminator(

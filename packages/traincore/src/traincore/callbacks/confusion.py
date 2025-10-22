@@ -6,11 +6,12 @@ from jaxtyping import Float
 from lightning import LightningModule
 from lightning.pytorch import Trainer
 from lightning.pytorch.callbacks import Callback
+from lightning.pytorch.loggers import Logger
 from lightning.pytorch.utilities import rank_zero_only
 from sklearn.metrics import confusion_matrix
 from torch.utils.data.dataset import Dataset
 from torch import Tensor
-from traincore.callbacks import get_logger
+# from traincore.callbacks import get_logger
 
 try:
     from matplotlib import pyplot as plt
@@ -63,7 +64,7 @@ class ConfusionCallback(Callback):
         plt.yticks(tick_marks, class_names)
 
         # Normalize the confusion matrix.
-        cm = np.around(cm.astype("float") / cm.sum(axis=1)[:, np.newaxis], decimals=2)
+        cm = np.around(cm.astype("float") / cm.sum(axis=1)[:, np.newaxis], decimals=2)  # ty: ignore
 
         # Use white text if squares are dark; otherwise black.
         threshold = cm.max() / 2.0
@@ -89,15 +90,15 @@ class ConfusionCallback(Callback):
         trainer: Trainer,
         pl_module: LightningModule,
     ) -> None:
-        logger_type: str | None = get_logger(trainer.logger)
-        if logger_type and plt and Image:
+        logger: Logger | None = trainer.logger
+        if logger and plt and Image:
             # get predictions
             y_true, y_pred = [], []
             for datum in self.dataset:
                 y_true.append(datum.true_label)
                 y_pred.append(pl_module.model(datum))  # ty: ignore[call-non-callable]
             self.plot_confusion_matrix(y_true, y_pred)
-            match logger_type:
+            match logger:
                 case "wandb":
                     pass
                 case "comet":

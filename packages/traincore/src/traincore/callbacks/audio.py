@@ -21,7 +21,7 @@ class LogAudio(Callback):
                 audio = datum[self.mix_of_interest].to(pl_module.device).unsqueeze(0)
                 # grab the first (and only) item and the first (and only source)
                 estimate = (
-                    pl_module.model.generator(audio)[0, 0].cpu().numpy(force=True)
+                    pl_module.model.generator(audio)[0, 0].cpu().numpy(force=True)  # ty: ignore[call-non-callable, possibly-missing-attribute]
                 )  # ty: ignore[call-non-callable]
                 description = f"""{datum["id"]}"""
                 match logger:
