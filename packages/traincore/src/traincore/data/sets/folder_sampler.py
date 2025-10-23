@@ -25,7 +25,7 @@ class FolderSamplerDataset:
 
     def __init__(
         self,
-        target_sample_rate: int = 44100,
+        target_sample_rate: float = 44100.0,
         num_channels: int = 1,
         max_frames: int = 44100,
         name: str = "AFolderSamplerDataset",
