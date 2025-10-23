@@ -30,6 +30,7 @@ class FolderSamplerDataset:
         max_frames: int = 44100,
         name: str = "AFolderSamplerDataset",
         data_dir: str | Path = "/data/dataset_dir",
+        glob_str: str | None = None,
         suffix: str = ".wav",
     ):
         self.target_sample_rate = target_sample_rate
@@ -37,6 +38,7 @@ class FolderSamplerDataset:
         self.max_frames = max_frames
         self.name = name
         self.data_dir = Path(data_dir)
+        self.glob_str = glob_str
         self.suffix = suffix
 
     def prepare_data(self) -> None:
@@ -55,6 +57,7 @@ class FolderSamplerDataset:
                 num_channels=self.num_channels,
                 max_frames=self.max_frames,
                 data_dir=self.data_dir / child_folder,
+                glob_str=self.glob_str,
                 suffix=self.suffix,
             )
             for child_folder in self.child_keys

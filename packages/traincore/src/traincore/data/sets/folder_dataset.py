@@ -25,6 +25,7 @@ class FolderDataset:
         max_frames: int | None = 44100,
         name: str = "AFolderDataset",
         data_dir: str | Path = "/data/dataset_dir",
+        glob_str: str | None = None,
         suffix: str = ".wav",
     ):
         self.target_sample_rate = target_sample_rate
@@ -34,11 +35,12 @@ class FolderDataset:
         self.data_dir = Path(data_dir)
         self.suffix = suffix
         self.data: list = []
+        self.glob_str = glob_str or "*{suffix}"
 
     def prepare_data(self) -> None: ...
 
     def setup(self, stage: str | None = None) -> None:
-        self.data = sorted(list(self.data_dir.rglob(f"*{self.suffix}")))
+        self.data = sorted(list((self.data_dir.rglob(self.glob_str.format(suffix=self.suffix))))
 
     def __len__(self) -> int:
         return len(self.data)
@@ -66,9 +68,10 @@ class FolderDataset:
         # (source, channels, samples)
         audio = audio.unsqueeze(0)
 
+        relative_path = datum.relative_to(self.data_dir).with_suffix("")
         return {
             "mix": audio,
             "mix_augmented": audio,
             "target": audio,
-            "id": f"{datum.stem}",
+            "id": f"{relative_path}",
         }
