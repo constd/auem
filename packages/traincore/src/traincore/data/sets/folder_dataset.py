@@ -19,7 +19,7 @@ __all__ = ["FolderDataset"]
 class FolderDataset:
     def __init__(
         self,
-        target_sample_rate: float = 44100,
+        target_sample_rate: float = 44100.0,
         num_channels: int = 1,
         max_frames: int | None = 44100,
         name: str = "AFolderDataset",

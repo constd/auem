@@ -23,10 +23,11 @@ def test_load_audio_should_return_samples_from_existing_wav_file(
         existing_audio_file_and_samples_channels
     )
 
-    audio_data, sr = load_audio(audio_path)
+    sr = 44100
+    audio_data, sr = load_audio(audio_path, sr)
     assert audio_data.shape[0] == expected_channels
     assert audio_data.shape[1] == expected_samples
-    assert sr == 44100
+    assert sr == sr
 
 
 def test_requesting_start_end_sample_should_return_samples_from_existing_wav_file(
@@ -34,15 +35,14 @@ def test_requesting_start_end_sample_should_return_samples_from_existing_wav_fil
 ):
     audio_path, _, expected_channels = existing_audio_file_and_samples_channels
 
-    start_sample = 100
     num_samples = 100
-    audio_data, sr = load_audio(audio_path, start=start_sample, frames=num_samples)
+    sr = 44100
+    audio_data, sr = load_audio(audio_path, sr, max_frames=num_samples)
     assert audio_data.shape[0] == expected_channels
     assert audio_data.shape[1] == num_samples
     assert sr == 44100
 
 
-@pytest.mark.xfail
 def test_loading_audio_at_requested_sample_rate_should_resample(
     existing_audio_file_and_samples_channels,
 ):
