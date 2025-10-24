@@ -41,9 +41,7 @@ class FolderSamplerDataset:
         self.glob_str = glob_str
         self.suffix = suffix
 
-    def prepare_data(self) -> None:
-        for _, v in self.subdatasets.items():
-            v.prepare_data()
+    def prepare_data(self) -> None: ...
 
     def setup(self, stage: str | None = None) -> None:
         self.child_keys = [
@@ -66,11 +64,15 @@ class FolderSamplerDataset:
             v.setup(stage)
 
     def __len__(self) -> int:
-        return len(self.child_keys)
+        subdataset_lengths = sum([len(ds) for k, ds in self.subdatasets.items()])
+        return subdataset_lengths
 
     def __getitem__(self, index: int) -> dict[str, Tensor | str]:
+        # since len(self) is of abitrary length, index simply selects the folder.
+        folder_index = index % len(self.child_keys)
+
         # Select a folder from the index.
-        child_folder = self.child_keys[index]
+        child_folder = self.child_keys[folder_index]
 
         # Select a file from the folder.
         selected_ds = self.subdatasets[child_folder]

@@ -21,7 +21,7 @@ def folder_of_folders_music_voiceof_audio_file(tmp_path_factory):
     return tmp_path
 
 
-def test_folder_sampler_should_have_len_equal_number_of_sub_folders(
+def test_folder_sampler_should_have_len_at_least_number_of_sub_folders(
     folder_of_folders_music_voiceof_audio_file,
 ):
     dataset_root = folder_of_folders_music_voiceof_audio_file
@@ -32,7 +32,7 @@ def test_folder_sampler_should_have_len_equal_number_of_sub_folders(
     )
     ds.setup()
 
-    assert len(ds) == len(list(dataset_root.iterdir()))
+    assert len(ds) >= len(list(dataset_root.iterdir()))
 
 
 def test_folder_sampler_should_return_a_audio_sample_for_each_sub_folder(
