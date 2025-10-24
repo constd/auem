@@ -1,8 +1,8 @@
 from functools import partial
 from typing import Any
 
-from lightning.pytorch import LightningModule
 import torch
+from lightning.pytorch import LightningModule
 from torch import Tensor
 from torch.nn import Module, ModuleDict
 from torch.optim import Optimizer
@@ -47,6 +47,7 @@ class GanTrainRecipe(LightningModule):
             clean_mix = dataset["target"]
 
             generated_mix = self.model.generator(augmented_mix)
+            generated_mix = generated_mix[..., : clean_mix.shape[-1]]  # ty: ignore[possibly-missing-attribute]
 
             # discriminator
             discriminator_output: dict[str, list[Tensor]] = self.model.discriminator(
@@ -105,6 +106,14 @@ class GanTrainRecipe(LightningModule):
         #     scheduler_gen.step()
         # if scheduler_dis:
         #     scheduler_dis.step()
+
+    def validation_step(
+        self,
+        batch: dict[str, dict[str, str | Tensor] | Tensor],
+        batch_idx: int | None = None,
+        dataloader_idx: int | None = None,
+    ):
+        return {"loss": 1.0}
 
     def configure_optimizers(self):
         ret = []

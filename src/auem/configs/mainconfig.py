@@ -3,6 +3,7 @@ from typing import Any
 
 from hydra.core.config_store import ConfigStore
 from omegaconf import MISSING
+from traincore.config_stores.callbacks import callback_store
 from traincore.config_stores.criterions import criterion_store
 from traincore.config_stores.datamodules import datamodule_store
 from traincore.config_stores.datasets import dataset_store
@@ -21,6 +22,7 @@ from generation.models.generators import *  # noqa
 from generation.models.discriminators import *  # noqa
 from generation.losses import *  # noqa
 
+callback_store.add_to_hydra_store()
 dataset_store.add_to_hydra_store()
 datamodule_store.add_to_hydra_store()
 logger_store.add_to_hydra_store()
@@ -39,6 +41,8 @@ class MainConfigStore:
     name: str = "here is a name for the training run"
     # run_id: str = II("hash_my_config:${},${},${}")
     seed: int = 1337
+    loggers: Any = None
+    callbacks: Any = None
     data: Any = MISSING
     recipe: Any = MISSING
     trainer: Any = MISSING

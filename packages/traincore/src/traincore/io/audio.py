@@ -1,16 +1,26 @@
 from pathlib import Path
 from jaxtyping import Float
-import soundfile as sf
+from pedalboard.io import AudioFile
+from random import randint
 import torch
 from torch import Tensor
 
 
 def load_audio(
-    audio_path: str | Path, target_sample_rate: float | int | None = None
-) -> tuple[Float[Tensor, "channel frame"], float | int]:
-    audio_path = Path(audio_path)
-    if not audio_path.exists():
-        raise FileNotFoundError(f"Audio file not found: {audio_path}")
-    audio_data, sample_rate = sf.read(audio_path, always_2d=True)
-    audio_data = torch.as_tensor(audio_data).transpose(0, 1).float()
-    return audio_data, sample_rate
+    audio_path: str | Path,
+    target_sample_rate: float | int | None = None,
+    max_frames: int | None = None,
+) -> tuple[Float[Tensor, "channel time"], int | float]:
+    start = 0
+    with AudioFile(str(audio_path)).resampled_to(float(target_sample_rate)) as af:  # ty: ignore[unresolved-attribute, no-matching-overload]
+        if max_frames is not None:
+            start = randint(0, af.frames) if af.frames > max_frames else 0
+
+        if 0 < start < af.frames:
+            af.seek(start)
+        chunk_size = max_frames if max_frames is not None else af.frames - start
+        audio = af.read(chunk_size)
+        sample_rate = (
+            af.sample_rate if target_sample_rate is None else target_sample_rate
+        )
+    return torch.from_numpy(audio), sample_rate

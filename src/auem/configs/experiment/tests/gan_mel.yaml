@@ -1,0 +1,87 @@
+# @package _global_
+
+defaults:
+  - /datamodule@data: generic
+  - /dataset@data.datasets.train.voices: folder
+  - /dataset@data.datasets.validation.random: random_audio
+  - /dataset@data.datasets.test.random: random_audio
+  - /model@recipe.model: ganbase
+  - /model@recipe.model.generator: melgan
+  - /model/encoder@recipe.model.generator.encoder: mel
+  - /model/discriminator@recipe.model.discriminator: combiner
+  - /model/discriminator@recipe.model.discriminator.discriminators.mp: multiperiod
+  - /model/discriminator@recipe.model.discriminator.discriminators.ms: multiscale
+  - /recipe: gan
+  - /criterion@recipe.loss.generator: generator
+  - /criterion@recipe.loss.generator.loss: lsgan
+  - /criterion@recipe.loss.discriminator: discriminator
+  - /criterion@recipe.loss.discriminator.loss: lsgan
+  - /criterion@recipe.loss.feature: feature_matching
+  - /criterion@recipe.loss.reconstruction: multimel
+  - /optimizer@recipe.optimizer.generator: Adam
+  - /optimizer@recipe.optimizer.discriminator: Adam
+  # - /scheduler@recipe.scheduler.generator: Adam
+  # - /scheduler@recipe.scheduler.discriminator: Adam
+  - /trainer: lit
+  - /logger@trainer.logger: comet
+  - /callback@callbacks.log_audio: audiologger
+  - /dataset@callbacks.log_audio.dataset: folder
+  - /callback@callbacks.model_summary: modelsummary
+  # - /callback@callbacks.model_checkpoint: checkpoint
+
+callbacks:
+  log_audio:
+    dataset:
+      data_dir: /root/data/datasets/antares/voices/
+      target_sample_rate: ${recipe.model.generator.sample_rate}
+      num_channels: ${recipe.model.generator.num_channels}
+      max_frames: null
+
+data:
+  datasets:
+    train:
+      voices:
+        data_dir: /root/data/datasets/antares/Voices2024/AUDIO
+        target_sample_rate: ${recipe.model.generator.sample_rate}
+        num_channels: ${recipe.model.generator.num_channels}
+        max_frames: ${recipe.model.generator.max_frames}
+        suffix: .flac
+    validation:
+      random:
+        n_examples: 100
+        n_samples: 10000
+    test:
+      random:
+        n_examples: 50
+        n_samples: 10000
+    batch_sizes:
+      train: 10
+      validation: 1
+      test: 1
+
+recipe:
+  model:
+    generator:
+      encoder:
+        n_mels: ${..n_mels}
+      n_mels: 80
+      # n_residual_layers: 1
+      max_frames: 10000
+      # ratios: [512]
+    discriminator:
+      discriminators:
+        mp:
+          configs:
+            # period: [2, 3, 5, 7, 11]
+            period: [4, 6]
+
+trainer:
+  fast_dev_run: false
+  log_every_n_steps: 5
+  check_val_every_n_epoch: 10
+  accelerator: cuda
+  devices: [0, 1, 2, 3]
+  logger:
+    workspace: restore
+    project: reconstruction
+    mode: create

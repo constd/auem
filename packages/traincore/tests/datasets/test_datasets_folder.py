@@ -21,7 +21,7 @@ def test_folder_dataset_should_return_datums_of_max_frame_length(folder_of_audio
     ds = FolderDataset(
         data_dir=folder_of_audio_files,
         suffix=".wav",
-        target_sample_rate=44100,
+        target_sample_rate=44100.0,
         max_frames=n_samples,
     )
     ds.setup()

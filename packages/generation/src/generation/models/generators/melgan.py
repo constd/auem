@@ -42,6 +42,7 @@ class MelGanGenerator(nn.Module):
         encoder: EncoderProtocol | None = None,
         sample_rate: float = 44100.0,
         max_frames: int = -1,
+        num_channels: int = 1,
     ) -> None:
         super().__init__()
         self.encoder = encoder

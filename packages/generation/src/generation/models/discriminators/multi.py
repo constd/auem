@@ -2,13 +2,14 @@ from functools import partial
 from typing import Any
 
 from torch import Tensor, nn
+from traincore.config_stores.models import model_store
 
+from generation.models.discriminators.period import PeriodDiscriminator
 from generation.models.discriminators.protocol import (
     DiscriminatorProtocol,
     MultiDiscriminatorReturnType,
 )
-from generation.models.discriminators.period import PeriodDiscriminator
-from traincore.config_stores.models import model_store
+from generation.models.discriminators.scale import ScaleDiscriminator
 
 
 @model_store(name="multidiscriminator", group="model/discriminator")
@@ -18,6 +19,17 @@ from traincore.config_stores.models import model_store
     discriminator=PeriodDiscriminator,
     configs={
         "period": [2, 3, 5, 7, 11],
+    },
+)
+@model_store(
+    name="multiscale",
+    group="model/discriminator",
+    discriminator=ScaleDiscriminator,
+    configs={
+        "downsampling_factor": 4,
+        "num_prefix_downsamples": [0, 1, 2],
+        "num_filters": 16,
+        "n_layers": 4,
     },
 )
 class MultiDiscriminator(nn.Module):
@@ -51,7 +63,31 @@ class MultiDiscriminator(nn.Module):
     ):
         super().__init__()
         self.configs = configs
-        list_of_configs = [dict(zip(configs, t)) for t in zip(*configs.values())]
+        shared_value_keys = [
+            k for k in self.configs if isinstance(self.configs[k], (int, float))
+        ]
+
+        # a key with a list of values determins how many discriminators you get.
+        # any lists have to be the same length.
+        list_value_keys = [k for k in self.configs if isinstance(self.configs[k], list)]
+        if list_value_keys:
+            n_discriminators = len(self.configs[list_value_keys[0]])
+            if not all([
+                n_discriminators == len(self.configs[k]) for k in list_value_keys
+            ]):
+                raise ValueError("All list values must have the same length.")
+        else:
+            n_discriminators = 1
+
+        config_template = {k: self.configs[k] for k in shared_value_keys}
+
+        list_of_configs = []
+        for i in range(n_discriminators):
+            c = config_template.copy()
+            for k in list_value_keys:
+                c[k] = self.configs[k][i]
+            list_of_configs.append(c)
+
         self.discriminators = nn.ModuleList([
             discriminator(**config) for config in list_of_configs
         ])

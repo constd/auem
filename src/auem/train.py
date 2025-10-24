@@ -1,7 +1,7 @@
 # given a config, set up all the necessary parts, and run training
 from hydra_zen import instantiate
 from lightning.pytorch import LightningDataModule, LightningModule, Trainer
-from lightning.pytorch.loggers import Logger
+from lightning.pytorch.callbacks import Callback
 from omegaconf import DictConfig
 
 
@@ -9,15 +9,17 @@ from auem.configs.mainconfig import train_store  # noqa
 
 
 def train(config: DictConfig) -> None:
-    loggers: Logger | None = (
-        instantiate(config.logger) if config.get("logger", None) else None
-    )
+    callbacks = None
+    if config.get("callbacks", None):
+        callbacks: list[Callback] = [
+            instantiate(v) for k, v in config.callbacks.items()
+        ]
 
     data: LightningDataModule = instantiate(config.data)
 
     recipe: LightningModule = instantiate(config.recipe)
 
-    trainer: Trainer = instantiate(config.trainer, logger=loggers)
+    trainer: Trainer = instantiate(config.trainer, callbacks=callbacks)
 
     trainer.fit(recipe, data)
 
