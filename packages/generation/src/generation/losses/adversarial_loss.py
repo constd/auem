@@ -43,9 +43,10 @@ class LSGANLoss(nn.Module):
 
 @criterion_store(name="generator")
 class GeneratorLoss(nn.Module):
-    def __init__(self, loss: nn.Module):
+    def __init__(self, loss: nn.Module, weight: float = 1.0):
         super().__init__()
         self.loss_fn = loss
+        self.weight_ = weight
 
     def forward(
         self, dicsriminator_output
@@ -62,14 +63,15 @@ class GeneratorLoss(nn.Module):
             losses.append(curr_loss)
             loss += curr_loss
 
-        return {"loss": loss, "losses_generator": losses}
+        return {"loss": self.weight_ * loss, "losses_generator": losses}
 
 
 @criterion_store(name="discriminator")
 class DiscriminatorLoss(nn.Module):
-    def __init__(self, loss: nn.Module):
+    def __init__(self, loss: nn.Module, weight: float = 1.0):
         super().__init__()
         self.loss_fn = loss
+        self.weight_ = weight
 
     def forward(
         self, dicsriminator_output
@@ -92,7 +94,7 @@ class DiscriminatorLoss(nn.Module):
             losses_generated.append(loss_generated)
 
         return {
-            "loss": loss,
+            "loss": self.weight_ * loss,
             "losses_discriminator_real": losses_real,
             "losses_discriminator_generated": losses_generated,
         }
@@ -100,6 +102,22 @@ class DiscriminatorLoss(nn.Module):
 
 @criterion_store(name="feature_matching")
 class FeatureMatchingLoss(nn.Module):
+    def __init__(self, scale: float = 10.0, weight: float = 1.0):
+        """
+        Paramters
+        =========
+        scale : float
+            A multiplier which scales the feature matching loss to a
+            similar range of the other losses. In melgan, this is 10.
+
+        weight: float
+            A configurable value to scale this loss against the other
+            losses.
+        """
+        super().__init__()
+        self.scale = scale
+        self.weight_ = weight
+
     def forward(self, dicsriminator_output) -> Tensor:
         loss = torch.zeros(
             1,
@@ -113,4 +131,4 @@ class FeatureMatchingLoss(nn.Module):
             for rl, gl in zip(dr, dg):
                 loss += torch.mean(torch.abs(rl - gl))
 
-        return loss
+        return self.weight_ * self.scale * loss

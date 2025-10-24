@@ -74,14 +74,18 @@ recipe:
           configs:
             # period: [2, 3, 5, 7, 11]
             period: [4, 6]
+  loss:
+    feature:
+      weight: 1.0
+    reconstruction:
+      weight: 1.0
 
 trainer:
   fast_dev_run: false
   log_every_n_steps: 5
   check_val_every_n_epoch: 10
-  accelerator: cuda
-  devices: [0, 1, 2, 3]
+  accelerator: cpu
   logger:
-    workspace: restore
-    project: reconstruction
-    mode: create
+    workspace: test
+    project: test
+    online: False
