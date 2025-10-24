@@ -94,7 +94,7 @@ class GanTrainRecipe(LightningModule):
             )
             self.log(
                 f"train/loss/feature_matching/{dataset_name}",
-                reconstruction_loss.item(),
+                feature_matching_loss.item(),
             )
 
         self.log("train/loss/generator/total", total_generator_loss)

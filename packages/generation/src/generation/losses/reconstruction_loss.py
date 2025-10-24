@@ -63,4 +63,4 @@ class MultiMelSpecReconstructionLoss(nn.Module):
         for mel_spec in self.mel_specs:
             loss = loss + mel_spec(y_hat, y)
         loss = loss / len(self.mel_specs)
-        return loss * self.weight
+        return loss * self.weight_

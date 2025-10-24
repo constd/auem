@@ -9,11 +9,9 @@ from auem.configs.mainconfig import train_store  # noqa
 
 
 def train(config: DictConfig) -> None:
-    callbacks = None
+    callbacks: list[Callback] | None = None
     if config.get("callbacks", None):
-        callbacks: list[Callback] = [
-            instantiate(v) for k, v in config.callbacks.items()
-        ]
+        callbacks = [instantiate(v) for k, v in config.callbacks.items()]
 
     data: LightningDataModule = instantiate(config.data)
 
