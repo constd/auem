@@ -1,8 +1,6 @@
-from typing import overload
-
 from einops import rearrange
 from jaxtyping import Float
-from torch import Tensor
+from torch import Tensor, log10, clamp
 from torch.nn import Module
 from torchaudio.transforms import MelSpectrogram
 
@@ -18,6 +16,7 @@ class MelEncoder(Module):
         n_fft: int = 2048,
         n_hop: int = 512,
         sample_rate: float = 44100.0,
+        epsilon: float = 1e-5,
     ) -> None:
         super().__init__()
         self.n_mels = n_mels
@@ -25,6 +24,7 @@ class MelEncoder(Module):
         self.n_fft: int = n_fft
         self.n_hop: int = n_hop
         self.sample_rate: int = int(sample_rate)
+        self.epsilon = epsilon
 
         self.mel = MelSpectrogram(
             n_mels=self.n_mels,
@@ -33,31 +33,21 @@ class MelEncoder(Module):
             sample_rate=self.sample_rate,
         )
 
-    @overload
-    def forward(
-        self, x: Float[Tensor, "batch channel time"]
-    ) -> Float[Tensor, "batch channel frequency timeframes"]: ...
-
-    @overload
-    def forward(
-        self, x: Float[Tensor, "batch source channel time"]
-    ) -> Float[Tensor, "batch source channel frequency timeframes"]: ...
+    def log_clamp(
+        self, mel: Float[Tensor, "batch frequency timeframes"]
+    ) -> Float[Tensor, "batch frequency timeframes"]:
+        return log10(clamp(mel, min=self.epsilon))
 
     def forward(
-        self,
-        x: Float[Tensor, "batch channel time"]
-        | Float[Tensor, "batch source channel time"],
-    ) -> (
-        Float[Tensor, "batch channel frequency timeframes"]
-        | Float[Tensor, "batch source channel frequency timeframes"]
-    ):
+        self, x: Float[Tensor, "batch ... channel time"]
+    ) -> Float[Tensor, "batch ... channel frequency timeframes"]:
         # Mel spectrogram only suports two dimensions.
         match x.dim():
             case 3:
                 b, c, _ = x.size()
                 x_ = rearrange(x, "b c t -> (b c) t")
 
-                X = self.mel(x_)
+                X = self.log_clamp(self.mel(x_))
 
                 return rearrange(X, "(b c) f t -> b c f t", b=b, c=c)
 
@@ -65,7 +55,7 @@ class MelEncoder(Module):
                 b, s, c, _ = x.size()
                 x_ = rearrange(x, "b s c t -> (b s c) t")
 
-                X = self.mel(x_)
+                X = self.log_clamp(self.mel(x_))
 
                 return rearrange(X, "(b s c) f t -> b s c f t", b=b, s=s, c=c)
             case _:
