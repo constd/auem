@@ -47,11 +47,14 @@ class GanTrainRecipe(LightningModule):
             clean_mix = dataset["target"]
 
             generated_mix = self.model.generator(augmented_mix)
-            generated_mix = generated_mix[..., : clean_mix.shape[-1]]  # ty: ignore[possibly-missing-attribute]
-
+            SHORTEST_AUDIO = min(generated_mix.shape[-1], augmented_mix.shape[-1], clean_mix.shape[-1])
+            generated_mix = generated_mix[..., : SHORTEST_AUDIO]  # ty: ignore[possibly-missing-attribute]
+            clean_mix = clean_mix[..., : SHORTEST_AUDIO]
+            augmented_mix = augmented_mix[..., : SHORTEST_AUDIO]
+            
             # discriminator
             discriminator_output: dict[str, list[Tensor]] = self.model.discriminator(
-                clean_mix, generated_mix
+                clean_mix, generated_mix.detach()
             )
 
             discriminator_loss = self.loss.discriminator(discriminator_output)
