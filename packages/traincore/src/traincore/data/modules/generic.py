@@ -24,6 +24,16 @@ class DatasetInputType(TypedDict):
     batch_size: BatchSizes = BatchSizes(train=1, validation=1, test=1)
 
 
+def seed_worker(worker_id):
+    import torch
+    import numpy as np
+    import random
+
+    worker_seed = torch.initial_seed() % 2**32
+    np.random.seed(worker_seed)
+    random.seed(worker_seed)
+
+
 @datamodule_store(name="generic")
 class GenericDataModule(LightningDataModule):
     def __init__(self, datasets: DatasetInputType, num_workers: int = 1) -> None:
@@ -71,7 +81,8 @@ class GenericDataModule(LightningDataModule):
                     drop_last=True,
                     num_workers=self.num_workers,
                     timeout=600,
-                    shuffle=False,
+                    shuffle=True,
+                    worker_init_fn=seed_worker
                 )
                 for name, dataset in self.datasets["train"].items()
             }

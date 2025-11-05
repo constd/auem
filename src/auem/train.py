@@ -3,12 +3,30 @@ from hydra_zen import instantiate
 from lightning.pytorch import LightningDataModule, LightningModule, Trainer
 from lightning.pytorch.callbacks import Callback
 from omegaconf import DictConfig
-
-
+import os
+import random
 from auem.configs.mainconfig import train_store  # noqa
 
 
+def seed_everything(seed: int):
+    import random, os
+    import numpy as np
+    import torch
+    from lightning.pytorch import seed_everything as LSE
+
+    LSE(seed, workers=True)
+    random.seed(seed)
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = True
+
+
 def train(config: DictConfig) -> None:
+    seed_everything(config.seed + int(os.getenv("LOCAL_RANK", "0")) * int(config.data.num_workers))
+    
     callbacks: list[Callback] | None = None
     if config.get("callbacks", None):
         callbacks = [instantiate(v) for k, v in config.callbacks.items()]
