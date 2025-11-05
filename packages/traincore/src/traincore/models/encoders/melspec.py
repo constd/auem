@@ -15,6 +15,8 @@ class MelEncoder(Module):
         window_size: int = 2048,
         n_fft: int = 2048,
         n_hop: int = 512,
+        f_min: float = 0.,
+        f_max: float | None = None,
         sample_rate: float = 44100.0,
         epsilon: float = 1e-5,
     ) -> None:
@@ -24,13 +26,20 @@ class MelEncoder(Module):
         self.n_fft: int = n_fft
         self.n_hop: int = n_hop
         self.sample_rate: int = int(sample_rate)
-        self.epsilon = epsilon
+        self.epsilon: float = epsilon
+        self.f_min: float = f_min
+        self.f_max: float = f_max
 
         self.mel = MelSpectrogram(
             n_mels=self.n_mels,
             n_fft=self.n_fft,
             hop_length=self.n_hop,
             sample_rate=self.sample_rate,
+            f_min=self.f_min,
+            f_max=self.f_max,
+            mel_scale="slaney",
+            normalized=False,
+            center=False,
         )
 
     def log_clamp(
