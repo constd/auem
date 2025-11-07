@@ -1,21 +1,18 @@
+import logging
+
 import torch
+from jaxtyping import Float
 from torch import Tensor, nn
 from torch.nn.utils.parametrizations import weight_norm
 from torchaudio.transforms import Resample
+from traincore.config_stores.models import model_store
 
-# from traincore.config_stores.models import model_store
 # from traincore.models.decoders.protocol import DecoderProtocol
 # from traincore.models.encoders.protocol import EncoderProtocol
-# from generation.models.discriminators.protocol import DiscriminatorReturnType
+from generation.models.discriminators.protocol import DiscriminatorReturnType
 
-__all__ = ["CQTDiscriminator", "MultiScaleSubbandCQTDiscriminator"]
-
-
-# From BigVGan for compatability.
-class AttrDict(dict):
-    def __init__(self, *args, **kwargs):
-        super(AttrDict, self).__init__(*args, **kwargs)
-        self.__dict__ = self
+logger = logging.getLogger(__name__)
+__all__ = ["CQTDiscriminator"]
 
 
 # @model_store(name="cqt", group="model/discriminator")
@@ -54,40 +51,53 @@ class AttrDict(dict):
 #         return {"estimate": x, "feature_map": fmap}
 
 
+# self.cfg["cqtd_hop_lengths"] = self.cfg.get("cqtd_hop_lengths", [512, 256, 256])
+# self.cfg["cqtd_n_octaves"] = self.cfg.get("cqtd_n_octaves", [9, 9, 9])
+# self.cfg["cqtd_bins_per_octaves"] = self.cfg.get(
+#     "cqtd_bins_per_octaves", [24, 36, 48]
+# )
+
+
 # Yoinked straight from https://github.com/NVIDIA/BigVGAN/blob/main/discriminators.py
 # to ensure it matches the original implementation.
 # Adapted from https://github.com/open-mmlab/Amphion/blob/main/models/vocoders/gan/discriminator/mssbcqtd.py under the MIT license.
 #   LICENSE is in incl_licenses directory.
+@model_store(name="cqt", group="model/discriminator")
 class CQTDiscriminator(nn.Module):
     def __init__(
         self,
-        cfg: AttrDict | dict,
         hop_length: int,
         n_octaves: int,
         bins_per_octave: int,
+        num_filters: int = 32,
+        num_channels: int = 1,
+        filters_scale: float = 1.0,
+        dilations: list[int] = [1, 2, 4],
+        sample_rate: int | float = 44100.0,
+        max_filters: int = 1024,
+        normalize_volume: bool = False,
     ):
         super().__init__()
-        self.cfg = cfg
+        self.mtype = "a2e"
 
-        self.filters = cfg["cqtd_filters"]
-        self.max_filters = cfg["cqtd_max_filters"]
-        self.filters_scale = cfg["cqtd_filters_scale"]
-        self.kernel_size = (3, 9)
-        self.dilations = cfg["cqtd_dilations"]
-        self.stride = (1, 2)
-
-        self.in_channels = cfg["cqtd_in_channels"]
-        self.out_channels = cfg["cqtd_out_channels"]
-        self.fs = cfg["sampling_rate"]
+        self.num_channels = num_channels
+        self.sr = sample_rate
         self.hop_length = hop_length
         self.n_octaves = n_octaves
         self.bins_per_octave = bins_per_octave
+
+        self.num_filters = num_filters
+        self.max_filters = max_filters
+        self.filters_scale = filters_scale
+        self.kernel_size = (3, 9)
+        self.dilations = dilations
+        self.stride = (1, 2)
 
         # Lazy-load
         from nnAudio import features
 
         self.cqt_transform = features.cqt.CQT2010v2(
-            sr=self.fs * 2,
+            sr=int(self.sr * 2),
             hop_length=self.hop_length,
             n_bins=self.bins_per_octave * self.n_octaves,
             bins_per_octave=self.bins_per_octave,
@@ -99,8 +109,8 @@ class CQTDiscriminator(nn.Module):
         for _ in range(self.n_octaves):
             self.conv_pres.append(
                 nn.Conv2d(
-                    self.in_channels * 2,
-                    self.in_channels * 2,
+                    self.num_channels * 2,
+                    self.num_channels * 2,
                     kernel_size=self.kernel_size,
                     padding=self.get_2d_padding(self.kernel_size),
                 )
@@ -110,17 +120,19 @@ class CQTDiscriminator(nn.Module):
 
         self.convs.append(
             nn.Conv2d(
-                self.in_channels * 2,
-                self.filters,
+                self.num_channels * 2,
+                self.num_filters,
                 kernel_size=self.kernel_size,
                 padding=self.get_2d_padding(self.kernel_size),
             )
         )
 
-        in_chs = int(min(self.filters_scale * self.filters, self.max_filters))
+        in_chs = int(min(self.filters_scale * self.num_filters, self.max_filters))
         for i, dilation in enumerate(self.dilations):
             out_chs = int(
-                min((self.filters_scale ** (i + 1)) * self.filters, self.max_filters)
+                min(
+                    (self.filters_scale ** (i + 1)) * self.num_filters, self.max_filters
+                )
             )
             self.convs.append(
                 weight_norm(
@@ -137,7 +149,7 @@ class CQTDiscriminator(nn.Module):
             in_chs = out_chs
         out_chs = int(
             min(
-                (self.filters_scale ** (len(self.dilations) + 1)) * self.filters,
+                (self.filters_scale ** (len(self.dilations) + 1)) * self.num_filters,
                 self.max_filters,
             )
         )
@@ -158,18 +170,18 @@ class CQTDiscriminator(nn.Module):
         self.conv_post = weight_norm(
             nn.Conv2d(
                 out_chs,
-                self.out_channels,
+                self.num_channels,
                 kernel_size=(self.kernel_size[0], self.kernel_size[0]),
                 padding=self.get_2d_padding((self.kernel_size[0], self.kernel_size[0])),
             )
         )
 
         self.activation = torch.nn.LeakyReLU(negative_slope=0.1)
-        self.resample = Resample(orig_freq=self.fs, new_freq=self.fs * 2)
+        self.resample = Resample(orig_freq=self.sr, new_freq=self.sr * 2)
 
-        self.cqtd_normalize_volume = self.cfg.get("cqtd_normalize_volume", False)
+        self.cqtd_normalize_volume = normalize_volume
         if self.cqtd_normalize_volume:
-            print(
+            logger.info(
                 "[INFO] cqtd_normalize_volume set to True. Will apply DC offset removal & peak volume normalization in CQTD!"
             )
 
@@ -183,8 +195,8 @@ class CQTDiscriminator(nn.Module):
             ((kernel_size[1] - 1) * dilation[1]) // 2,
         )
 
-    def forward(self, x: Tensor) -> tuple[Tensor, list[Tensor]]:
-        fmap = []
+    def forward(self, x: Tensor) -> DiscriminatorReturnType:
+        fmap: list[Float[Tensor, "..."]] = []
 
         if self.cqtd_normalize_volume:
             # Remove DC offset
@@ -224,57 +236,7 @@ class CQTDiscriminator(nn.Module):
 
         latent_z = self.conv_post(latent_z)
 
-        return latent_z, fmap
-
-
-class MultiScaleSubbandCQTDiscriminator(nn.Module):
-    def __init__(self, cfg: AttrDict | dict):
-        super().__init__()
-
-        self.cfg = cfg
-        # Using get with defaults
-        self.cfg["cqtd_filters"] = self.cfg.get("cqtd_filters", 32)
-        self.cfg["cqtd_max_filters"] = self.cfg.get("cqtd_max_filters", 1024)
-        self.cfg["cqtd_filters_scale"] = self.cfg.get("cqtd_filters_scale", 1)
-        self.cfg["cqtd_dilations"] = self.cfg.get("cqtd_dilations", [1, 2, 4])
-        self.cfg["cqtd_in_channels"] = self.cfg.get("cqtd_in_channels", 1)
-        self.cfg["cqtd_out_channels"] = self.cfg.get("cqtd_out_channels", 1)
-        # Multi-scale params to loop over
-        self.cfg["cqtd_hop_lengths"] = self.cfg.get("cqtd_hop_lengths", [512, 256, 256])
-        self.cfg["cqtd_n_octaves"] = self.cfg.get("cqtd_n_octaves", [9, 9, 9])
-        self.cfg["cqtd_bins_per_octaves"] = self.cfg.get(
-            "cqtd_bins_per_octaves", [24, 36, 48]
-        )
-
-        self.discriminators = nn.ModuleList([
-            CQTDiscriminator(
-                self.cfg,
-                hop_length=self.cfg["cqtd_hop_lengths"][i],
-                n_octaves=self.cfg["cqtd_n_octaves"][i],
-                bins_per_octave=self.cfg["cqtd_bins_per_octaves"][i],
-            )
-            for i in range(len(self.cfg["cqtd_hop_lengths"]))
-        ])
-
-    def forward(
-        self, y: torch.Tensor, y_hat: torch.Tensor
-    ) -> tuple[
-        list[torch.Tensor],
-        list[torch.Tensor],
-        list[list[torch.Tensor]],
-        list[list[torch.Tensor]],
-    ]:
-        y_d_rs = []
-        y_d_gs = []
-        fmap_rs = []
-        fmap_gs = []
-
-        for disc in self.discriminators:
-            y_d_r, fmap_r = disc(y)
-            y_d_g, fmap_g = disc(y_hat)
-            y_d_rs.append(y_d_r)
-            fmap_rs.append(fmap_r)
-            y_d_gs.append(y_d_g)
-            fmap_gs.append(fmap_g)
-
-        return y_d_rs, y_d_gs, fmap_rs, fmap_gs
+        return {
+            "estimate": latent_z,
+            "feature_map": fmap,
+        }
