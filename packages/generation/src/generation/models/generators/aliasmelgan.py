@@ -17,10 +17,10 @@ class ResnetBlock(nn.Module):
     def __init__(self, dim: int, dilation: int = 1) -> None:
         super().__init__()
         self.block = nn.Sequential(
-            Activation1d(dim),
+            Activation1d(nn.LeakyReLU(0.2)),
             nn.ReflectionPad1d(dilation),
             weight_norm(nn.Conv1d(dim, dim, kernel_size=3, dilation=dilation)),
-            Activation1d(dim),
+            Activation1d(nn.LeakyReLU(0.2)),
             weight_norm(nn.Conv1d(dim, dim, kernel_size=1)),
         )
         self.shortcut = weight_norm(nn.Conv1d(dim, dim, kernel_size=1))
