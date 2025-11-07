@@ -20,7 +20,7 @@ def test_cqt_discriminator_basic_configuration_runs_forward_pass():
         sample_rate=sr,
     )
 
-    input_data = torch.randn(1, n_samples)
+    input_data = torch.randn(1, 1, 1, n_samples)
 
     output = discriminator(input_data)
 

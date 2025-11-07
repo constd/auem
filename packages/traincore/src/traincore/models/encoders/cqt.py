@@ -24,7 +24,7 @@ class CQTEncoder(Module):
 
     def __init__(
         self,
-        sr: float = 22050,
+        sample_rate: int | float = 22050,
         hop_length: int = 512,
         fmin: float = 32.7,
         fmax: float | None = None,
@@ -37,8 +37,9 @@ class CQTEncoder(Module):
         **kwargs,
     ):
         super(CQTEncoder, self).__init__()
+        self.cqt_cls = cqt_cls
         self.cqt = getattr(features, cqt_cls)(
-            sr=sr,
+            sr=sample_rate,
             hop_length=hop_length,
             fmin=fmin,
             fmax=fmax,
@@ -52,7 +53,10 @@ class CQTEncoder(Module):
 
     def forward(
         self, x: Float[Tensor, "batch ... time"]
-    ) -> Float[Tensor, "batch ... freq timeframes"]:
+    ) -> (
+        Float[Tensor, "batch ... freq timeframes"]
+        | Float[Tensor, "batch ... freq timeframes imag_real"]
+    ):
         try:
             match x.dim():
                 case 3:
@@ -61,7 +65,10 @@ class CQTEncoder(Module):
 
                     X = self.cqt(x_)
 
-                    return rearrange(X, "(b c) f t -> b c f t", b=b, c=c)
+                    if self.cqt.output_format == "Complex":
+                        return rearrange(X, "(b c) f t ir -> b c f t ir", b=b, c=c)
+                    else:
+                        return rearrange(X, "(b c) f t -> b c f t", b=b, c=c)
 
                 case 4:
                     b, s, c, _ = x.size()
@@ -69,12 +76,20 @@ class CQTEncoder(Module):
 
                     X = self.cqt(x_)
 
-                    return rearrange(X, "(b s c) f t -> b s c f t", b=b, s=s, c=c)
+                    if self.cqt.output_format == "Complex":
+                        return rearrange(
+                            X, "(b s c) f t ir -> b s c f t ir", b=b, s=s, c=c
+                        )
+                    else:
+                        return rearrange(X, "(b s c) f t -> b s c f t", b=b, s=s, c=c)
                 case _:
                     raise ValueError(
                         f"Invalid input shape: {x.dim()}. Expected shapes are 'batch channel time' (3) or 'batch source channel time' (4)"
                     )
         except RuntimeError as e:
-            raise RuntimeError(
-                f"Error in CQT forward pass: {e} -- min len for cqt kernel_width is: {(self.cqt.kernel_width // 2) + 1}"
-            )
+            if self.cqt_cls == "CQT1992v2":
+                raise RuntimeError(
+                    f"Error in CQT forward pass: {e} -- min len for cqt kernel_width is: {(self.cqt.kernel_width // 2) + 1}"
+                )
+            else:
+                raise e

@@ -5,12 +5,7 @@ from generation.models import discriminators
 from generation.models.discriminators.protocol import DiscriminatorProtocol
 
 
-@pytest.fixture(
-    params=[
-        "PeriodDiscriminator",
-        # "CQTDiscriminator"
-    ]
-)
+@pytest.fixture(params=["PeriodDiscriminator", "CQTDiscriminator"])
 def discriminator_cls(request) -> type[DiscriminatorProtocol]:
     """Fixture that yields each registered model class for parametrized testing.
 

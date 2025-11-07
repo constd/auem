@@ -1,6 +1,6 @@
 from einops import rearrange
 from jaxtyping import Float
-from torch import Tensor, log10, clamp
+from torch import Tensor, clamp, log10
 from torch.nn import Module
 from torchaudio.transforms import MelSpectrogram
 
@@ -15,10 +15,11 @@ class MelEncoder(Module):
         window_size: int = 2048,
         n_fft: int = 2048,
         n_hop: int = 512,
-        f_min: float = 0.,
+        f_min: float = 0.0,
         f_max: float | None = None,
         sample_rate: float = 44100.0,
         epsilon: float = 1e-5,
+        center: bool = False,
     ) -> None:
         super().__init__()
         self.n_mels = n_mels
@@ -39,7 +40,7 @@ class MelEncoder(Module):
             f_max=self.f_max,
             mel_scale="slaney",
             normalized=False,
-            center=False,
+            center=center,
         )
 
     def log_clamp(

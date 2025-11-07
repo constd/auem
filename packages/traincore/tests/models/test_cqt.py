@@ -9,7 +9,7 @@ from traincore.models.encoders.cqt import CQTEncoder
     [
         {"n_bins": 84},
         {
-            "sr": 44100.0,
+            "sample_rate": 44100.0,
             "fmax": 10000.0,
             "n_bins": 48,
             "bins_per_octave": 12,

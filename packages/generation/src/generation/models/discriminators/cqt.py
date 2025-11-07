@@ -1,11 +1,13 @@
 import logging
 
 import torch
+from einops import rearrange
 from jaxtyping import Float
 from torch import Tensor, nn
 from torch.nn.utils.parametrizations import weight_norm
 from torchaudio.transforms import Resample
 from traincore.config_stores.models import model_store
+from traincore.models.encoders.cqt import CQTEncoder
 
 # from traincore.models.decoders.protocol import DecoderProtocol
 # from traincore.models.encoders.protocol import EncoderProtocol
@@ -13,42 +15,6 @@ from generation.models.discriminators.protocol import DiscriminatorReturnType
 
 logger = logging.getLogger(__name__)
 __all__ = ["CQTDiscriminator"]
-
-
-# @model_store(name="cqt", group="model/discriminator")
-# class CQTDiscriminator(nn.Module):
-#     def __init__(
-#         self,
-#         num_filters: int = 32,
-#         max_filters: int = 1024,
-#         scale: float = 1.0,
-#         in_channels: int = 1,
-#         out_channels: int = 1,
-#         hop_length: int = 512,
-#         n_octaves: int,
-#         bins_per_octave: int,
-#         kernel_size: tuple(int, int) = (3, 9),
-#         dilations: tuple(int, int) = (1, 1),
-#         stride: tuple(int, int) = (1, 2),
-#         encoder: EncoderProtocol | None = None,
-#         decoder: DecoderProtocol | None = None,
-#         sample_rate: float = 44100.0,
-#         num_samples: int = -1,
-#     ):
-#         super().__init__()
-#         self.mtype = "a2e"
-#         self.encoder = encoder
-#         self.decoder = decoder
-
-#         self.sample_rate = sample_rate
-#         self.num_samples = num_samples
-
-#     def forward(self, x: Tensor) -> DiscriminatorReturnType:
-#         fmap: list[Float[Tensor, "..."]] = []
-
-#         x = None
-
-#         return {"estimate": x, "feature_map": fmap}
 
 
 # self.cfg["cqtd_hop_lengths"] = self.cfg.get("cqtd_hop_lengths", [512, 256, 256])
@@ -66,9 +32,9 @@ __all__ = ["CQTDiscriminator"]
 class CQTDiscriminator(nn.Module):
     def __init__(
         self,
-        hop_length: int,
-        n_octaves: int,
-        bins_per_octave: int,
+        hop_length: int = 512,
+        n_octaves: int = 5,
+        bins_per_octave: int = 24,
         num_filters: int = 32,
         num_channels: int = 1,
         filters_scale: float = 1.0,
@@ -93,16 +59,14 @@ class CQTDiscriminator(nn.Module):
         self.dilations = dilations
         self.stride = (1, 2)
 
-        # Lazy-load
-        from nnAudio import features
-
-        self.cqt_transform = features.cqt.CQT2010v2(
-            sr=int(self.sr * 2),
+        self.cqt_transform = CQTEncoder(
+            sample_rate=int(self.sr * 2),
             hop_length=self.hop_length,
             n_bins=self.bins_per_octave * self.n_octaves,
             bins_per_octave=self.bins_per_octave,
             output_format="Complex",
             pad_mode="constant",
+            cqt_cls="CQT2010v2",
         )
 
         self.conv_pres = nn.ModuleList()
@@ -204,15 +168,14 @@ class CQTDiscriminator(nn.Module):
             # Peak normalize the volume of input audio
             x = 0.8 * x / (x.abs().max(dim=-1, keepdim=True)[0] + 1e-9)
 
+        # x => [B, S, C, T]
         x = self.resample(x)
 
+        # z => [B, S, C, F, T, IR]
         z = self.cqt_transform(x)
 
-        z_amplitude = z[:, :, :, 0].unsqueeze(1)
-        z_phase = z[:, :, :, 1].unsqueeze(1)
-
-        z = torch.cat([z_amplitude, z_phase], dim=1)
-        z = torch.permute(z, (0, 1, 3, 2))  # [B, C, W, T] -> [B, C, T, W]
+        # Complex as Channels
+        z = rearrange(z, "b s c f t ir -> (b s) (c ir) t f")
 
         latent_z = []
         for i in range(self.n_octaves):

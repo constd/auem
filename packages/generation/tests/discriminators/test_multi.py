@@ -1,5 +1,6 @@
 import pytest
 import torch
+from generation.models.discriminators.cqt import CQTDiscriminator
 from generation.models.discriminators.multi import MultiDiscriminator
 from generation.models.discriminators.scale import ScaleDiscriminator
 
@@ -14,6 +15,25 @@ def test_multi_scale(disc_def):
         "n_layers": 4,
     }
     multi_discriminator = MultiDiscriminator(ScaleDiscriminator, configs)
+
+    seq_len = 8192
+    x = torch.randn(1, 1, 1, seq_len)
+    y_hat = multi_discriminator(x)
+
+    assert isinstance(y_hat["estimates"], list)
+    assert len(y_hat["estimates"]) == n_discriminators
+    assert isinstance(y_hat["feature_maps"], list)
+    assert len(y_hat["feature_maps"]) == n_discriminators
+
+
+def test_multi_cqt():
+    n_discriminators = 3
+    configs = {
+        "hop_length": [512, 256, 256],
+        "n_octaves": [9, 9, 9],
+        "bins_per_octave": [24, 36, 48],
+    }
+    multi_discriminator = MultiDiscriminator(CQTDiscriminator, configs)
 
     seq_len = 8192
     x = torch.randn(1, 1, 1, seq_len)

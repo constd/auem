@@ -26,7 +26,7 @@ def test_should_have_a_valid_audio_output(gan_cls, mels_samples: tuple[int, int]
         n_mels=n_mels,
         n_residual_layers=n_residual_layers,
         ratios=[8, 8, 2, 2, 2],
-        encoder=MelEncoder(n_mels=n_mels),
+        encoder=MelEncoder(n_mels=n_mels, center=True),
     )
 
     # y.shape = (batch, source, channels, time) <- time in samples
