@@ -40,7 +40,7 @@ class PeriodDiscriminator(nn.Module):
         self.kernel_size = kernel_size
         self.stride = stride
         self.use_spectral_norm = use_spectral_norm
-        self.d_mult = 4  # discriminator_channel_multiplier
+        self.d_mult = discriminator_channel_multiplier
 
         dilation = 1
         norm = spectral_norm if use_spectral_norm else weight_norm
