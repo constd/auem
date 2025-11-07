@@ -4,12 +4,15 @@ from typing import Any
 from torch import Tensor, nn
 from traincore.config_stores.models import model_store
 
+from generation.models.discriminators.cqt import CQTDiscriminator
 from generation.models.discriminators.period import PeriodDiscriminator
 from generation.models.discriminators.protocol import (
     DiscriminatorProtocol,
     MultiDiscriminatorReturnType,
 )
 from generation.models.discriminators.scale import ScaleDiscriminator
+
+__all__ = ["MultiDiscriminator"]
 
 
 @model_store(name="multidiscriminator", group="model/discriminator")
@@ -30,6 +33,16 @@ from generation.models.discriminators.scale import ScaleDiscriminator
         "num_prefix_downsamples": [0, 1, 2],
         "num_filters": 16,
         "n_layers": 4,
+    },
+)
+@model_store(
+    name="multicqt",
+    group="model/discriminator",
+    discriminator=CQTDiscriminator,
+    configs={
+        "hop_length": [512, 256, 256],
+        "n_octaves": [9, 9, 9],
+        "bins_per_octave": [24, 36, 48],
     },
 )
 class MultiDiscriminator(nn.Module):
