@@ -6,6 +6,7 @@ from torch import Tensor, nn
 from torch.nn.utils.parametrizations import weight_norm
 from traincore.config_stores.models import model_store
 from traincore.models.activations.afa import Activation1d
+from traincore.models.activations.snake import Snake, SnakeBeta
 from traincore.models.encoders.protocol import EncoderProtocol
 
 __all__ = ["AliasFreMelGanGenerator"]
@@ -14,13 +15,24 @@ __all__ = ["AliasFreMelGanGenerator"]
 class ResnetBlock(nn.Module):
     """The exact resnet block used by MelGan."""
 
-    def __init__(self, dim: int, dilation: int = 1) -> None:
+    def __init__(self, dim: int, dilation: int = 1, activation: str = "snake") -> None:
         super().__init__()
+        match activation:
+            case "Snake":
+                activation_cls = Snake
+            case "SnakeBeta":
+                activation_cls = SnakeBeta
+            case _:
+                activation_cls = nn.LeakyReLU
+        if activation_cls is None:
+            raise ValueError(
+                f"unknown activation: '{activation}'. Possible choices are: Snake, SnakeBeta"
+            )
         self.block = nn.Sequential(
-            Activation1d(nn.LeakyReLU(0.2)),
+            Activation1d(activation(dim)),
             nn.ReflectionPad1d(dilation),
             weight_norm(nn.Conv1d(dim, dim, kernel_size=3, dilation=dilation)),
-            Activation1d(nn.LeakyReLU(0.2)),
+            Activation1d(activation(dim)),
             weight_norm(nn.Conv1d(dim, dim, kernel_size=1)),
         )
         self.shortcut = weight_norm(nn.Conv1d(dim, dim, kernel_size=1))
