@@ -1,6 +1,7 @@
-from torch import nn, Tensor
 import torch
 import torchaudio
+from omegaconf import II
+from torch import Tensor, nn
 from traincore.config_stores.criterions import criterion_store
 
 
@@ -38,7 +39,7 @@ class MelSpecReconstructionLoss(nn.Module):
         return loss * self.weight_
 
 
-@criterion_store(name="multimel")
+@criterion_store(name="multimel", sample_rate=II("recipe.model.generator.sample_rate"))
 class MultiMelSpecReconstructionLoss(nn.Module):
     def __init__(
         self,
