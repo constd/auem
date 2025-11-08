@@ -2,15 +2,13 @@
 
 defaults:
   - /datamodule@data: generic
-  - /dataset@data.datasets.train.voices: folder
+  - /dataset@data.datasets.train.random: random_audio
   - /dataset@data.datasets.validation.random: random_audio
   - /dataset@data.datasets.test.random: random_audio
   - /model@recipe.model: ganbase
   - /model@recipe.model.generator: melgan
   - /model/encoder@recipe.model.generator.encoder: mel
   - /model/discriminator@recipe.model.discriminator: combiner
-  - /model/discriminator@recipe.model.discriminator.discriminators.mp: multiperiod
-  - /model/discriminator@recipe.model.discriminator.discriminators.ms: multiscale
   - /recipe: gan
   - /criterion@recipe.loss.generator: generator
   - /criterion@recipe.loss.generator.loss: lsgan
@@ -23,7 +21,6 @@ defaults:
   # - /scheduler@recipe.scheduler.generator: Adam
   # - /scheduler@recipe.scheduler.discriminator: Adam
   - /trainer: lit
-  - /logger@trainer.logger: comet
   - /callback@callbacks.log_audio: audiologger
   - /dataset@callbacks.log_audio.dataset: folder
   - /callback@callbacks.model_summary: modelsummary
@@ -32,7 +29,7 @@ defaults:
 callbacks:
   log_audio:
     dataset:
-      data_dir: /root/data/datasets/antares/voices/
+      data_dir: /path/to/a/folder/with/audio/files
       target_sample_rate: ${recipe.model.generator.sample_rate}
       num_channels: ${recipe.model.generator.num_channels}
       max_frames: null
@@ -40,12 +37,9 @@ callbacks:
 data:
   datasets:
     train:
-      voices:
-        data_dir: /root/data/datasets/antares/Voices2024/AUDIO
-        target_sample_rate: ${recipe.model.generator.sample_rate}
-        num_channels: ${recipe.model.generator.num_channels}
-        max_frames: ${recipe.model.generator.max_frames}
-        suffix: .flac
+      random:
+        n_examples: 100
+        n_samples: 8192
     validation:
       random:
         n_examples: 100
@@ -68,12 +62,6 @@ recipe:
       # n_residual_layers: 1
       max_frames: 10000
       # ratios: [512]
-    discriminator:
-      discriminators:
-        mp:
-          configs:
-            # period: [2, 3, 5, 7, 11]
-            period: [4, 6]
   loss:
     feature:
       weight: 1.0
@@ -81,11 +69,8 @@ recipe:
       weight: 1.0
 
 trainer:
-  fast_dev_run: false
+  fast_dev_run: true
   log_every_n_steps: 5
   check_val_every_n_epoch: 10
   accelerator: cpu
-  logger:
-    workspace: test
-    project: test
-    online: False
+  logger: null
