@@ -29,10 +29,10 @@ class ResnetBlock(nn.Module):
                 f"unknown activation: '{activation}'. Possible choices are: Snake, SnakeBeta"
             )
         self.block = nn.Sequential(
-            Activation1d(activation(dim)),
+            Activation1d(activation_cls(dim)),
             nn.ReflectionPad1d(dilation),
             weight_norm(nn.Conv1d(dim, dim, kernel_size=3, dilation=dilation)),
-            Activation1d(activation(dim)),
+            Activation1d(activation_cls(dim)),
             weight_norm(nn.Conv1d(dim, dim, kernel_size=1)),
         )
         self.shortcut = weight_norm(nn.Conv1d(dim, dim, kernel_size=1))
