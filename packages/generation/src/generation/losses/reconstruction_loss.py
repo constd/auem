@@ -13,7 +13,7 @@ def safe_log(x: Tensor) -> Tensor:
 class MelSpecReconstructionLoss(nn.Module):
     def __init__(
         self,
-        sample_rate: int = 48000,
+        sample_rate: float = 48000.0,
         n_fft: int = 1024,
         hop_length: int = 256,
         n_mels: int = 100,
@@ -21,7 +21,7 @@ class MelSpecReconstructionLoss(nn.Module):
     ):
         super().__init__()
         self.mel_spec = torchaudio.transforms.MelSpectrogram(
-            sample_rate=sample_rate,
+            sample_rate=int(sample_rate),
             n_fft=n_fft,
             hop_length=hop_length,
             n_mels=n_mels,
@@ -43,7 +43,7 @@ class MelSpecReconstructionLoss(nn.Module):
 class MultiMelSpecReconstructionLoss(nn.Module):
     def __init__(
         self,
-        sample_rate: int = 48000,
+        sample_rate: float = 48000.0,
         n_fft: list[int] = [1024, 2048, 4096],
         hop_length: list[int] = [256, 512, 1024],
         n_mels: list[int] = [80, 160, 320],
