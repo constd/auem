@@ -38,7 +38,7 @@ class MelGanGenerator(nn.Module):
         pad_input: bool = True,
         n_residual_layers: int = -1,
         output_channels: int = 1,
-        final_activation: str | None = "Tanh",
+        final_activation: str | None = None,
         encoder: EncoderProtocol | None = None,
         sample_rate: float = 44100.0,
         max_frames: int = -1,

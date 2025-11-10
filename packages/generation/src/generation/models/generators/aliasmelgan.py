@@ -15,7 +15,7 @@ __all__ = ["AliasFreeMelGanGenerator"]
 class ResnetBlock(nn.Module):
     """The exact resnet block used by MelGan."""
 
-    def __init__(self, dim: int, dilation: int = 1, activation: str = "snake") -> None:
+    def __init__(self, dim: int, dilation: int = 1, activation: str = "Snake") -> None:
         super().__init__()
         match activation:
             case "Snake":
@@ -51,7 +51,7 @@ class AliasFreeMelGanGenerator(nn.Module):
         pad_input: bool = True,
         n_residual_layers: int = -1,
         output_channels: int = 1,
-        final_activation: str | None = "Tanh",
+        final_activation: str | None = None,
         encoder: EncoderProtocol | None = None,
         sample_rate: float = 44100.0,
         max_frames: int = -1,
