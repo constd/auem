@@ -1,12 +1,11 @@
-from omegaconf import II
-from jaxtyping import Float
-
 import numpy as np
 from einops import rearrange
-from torch import nn, Tensor
+from jaxtyping import Float
+from omegaconf import II
+from torch import Tensor, nn
 from torch.nn.utils.parametrizations import weight_norm
-from traincore.models.encoders.protocol import EncoderProtocol
 from traincore.config_stores.models import model_store
+from traincore.models.encoders.protocol import EncoderProtocol
 
 __all__ = ["MelGanGenerator"]
 
@@ -39,6 +38,7 @@ class MelGanGenerator(nn.Module):
         pad_input: bool = True,
         n_residual_layers: int = -1,
         output_channels: int = 1,
+        final_activation: str | None = "Tanh",
         encoder: EncoderProtocol | None = None,
         sample_rate: float = 44100.0,
         max_frames: int = -1,
@@ -93,7 +93,6 @@ class MelGanGenerator(nn.Module):
                     )
                 ),
             ]
-
             for j in range(self.n_residual_layers):
                 model += [
                     ResnetBlock(mult * ngf // 2, dilation=3**j),
@@ -105,8 +104,9 @@ class MelGanGenerator(nn.Module):
             nn.LeakyReLU(0.2),
             nn.ReflectionPad1d(3),
             weight_norm(nn.Conv1d(ngf, self.output_channels, kernel_size=7, padding=0)),
-            nn.Tanh(),
         ]
+        if final_activation and getattr(nn, final_activation, None):
+            model.append(getattr(nn, final_activation)())
         self.model = nn.Sequential(*model)
 
     def forward(
