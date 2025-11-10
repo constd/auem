@@ -9,7 +9,7 @@ from traincore.models.activations.afa import Activation1d
 from traincore.models.activations.snake import Snake, SnakeBeta
 from traincore.models.encoders.protocol import EncoderProtocol
 
-__all__ = ["AliasFreMelGanGenerator"]
+__all__ = ["AliasFreeMelGanGenerator"]
 
 
 class ResnetBlock(nn.Module):
@@ -42,7 +42,7 @@ class ResnetBlock(nn.Module):
 
 
 @model_store(name="melganaf", n_mels=II(".encoder.n_mels"))
-class AliasFreMelGanGenerator(nn.Module):
+class AliasFreeMelGanGenerator(nn.Module):
     # TODO: should we have a base class?
     def __init__(
         self,
@@ -51,6 +51,7 @@ class AliasFreMelGanGenerator(nn.Module):
         pad_input: bool = True,
         n_residual_layers: int = -1,
         output_channels: int = 1,
+        final_activation: str | None = "Tanh",
         encoder: EncoderProtocol | None = None,
         sample_rate: float = 44100.0,
         max_frames: int = -1,
@@ -117,8 +118,9 @@ class AliasFreMelGanGenerator(nn.Module):
             nn.LeakyReLU(0.2),
             nn.ReflectionPad1d(3),
             weight_norm(nn.Conv1d(ngf, self.output_channels, kernel_size=7, padding=0)),
-            # nn.Tanh(),
         ]
+        if final_activation and getattr(nn, final_activation, None):
+            model.append(getattr(nn, final_activation)())
         self.model = nn.Sequential(*model)
 
     def forward(
