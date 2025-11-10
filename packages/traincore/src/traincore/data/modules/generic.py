@@ -18,16 +18,17 @@ class BatchSizes(TypedDict):
 
 
 class DatasetInputType(TypedDict):
-    train: dict[str, DatasetProtocol] | None
-    validation: dict[str, DatasetProtocol] | None
-    test: dict[str, DatasetProtocol] | None
+    train: dict[str, DatasetProtocol] | None = None
+    validation: dict[str, DatasetProtocol] | None = None
+    test: dict[str, DatasetProtocol] | None = None
     batch_size: BatchSizes = BatchSizes(train=1, validation=1, test=1)
 
 
 def seed_worker(worker_id):
-    import torch
-    import numpy as np
     import random
+
+    import numpy as np
+    import torch
 
     worker_seed = torch.initial_seed() % 2**32
     np.random.seed(worker_seed)
@@ -82,7 +83,7 @@ class GenericDataModule(LightningDataModule):
                     num_workers=self.num_workers,
                     timeout=600,
                     shuffle=True,
-                    worker_init_fn=seed_worker
+                    worker_init_fn=seed_worker,
                 )
                 for name, dataset in self.datasets["train"].items()
             }
