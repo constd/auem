@@ -1,6 +1,6 @@
 import pytest
 import torch
-from generation.models.generators import MelGanGenerator
+from generation.models.generators import AliasFreeMelGanGenerator, MelGanGenerator
 from traincore.models.encoders.melspec import MelEncoder
 
 
@@ -17,8 +17,11 @@ def mels_samples(request):
     return request.param
 
 
-@pytest.mark.parametrize("gan_cls", [MelGanGenerator])
-def test_should_have_a_valid_audio_output(gan_cls, mels_samples: tuple[int, int]):
+@pytest.mark.parametrize("gan_cls", [MelGanGenerator, AliasFreeMelGanGenerator])
+@pytest.mark.parametrize("final_activation", [None, "Tanh"])
+def test_should_have_a_valid_audio_output(
+    gan_cls, mels_samples: tuple[int, int], final_activation: str | None
+):
     n_mels, n_frames = mels_samples
     samples = torch.randn(1, 1, n_frames)
     n_residual_layers = 2
@@ -27,11 +30,16 @@ def test_should_have_a_valid_audio_output(gan_cls, mels_samples: tuple[int, int]
         n_residual_layers=n_residual_layers,
         ratios=[8, 8, 2, 2, 2],
         encoder=MelEncoder(n_mels=n_mels, center=True),
+        final_activation=final_activation,
     )
 
     # y.shape = (batch, source, channels, time) <- time in samples
     y = generator(samples)
 
     assert y.shape[-1] > n_frames
-    assert y.min() >= -1.0
-    assert y.max() <= 1.0
+    match final_activation:
+        case "Tanh":
+            assert y.min() >= -1.0
+            assert y.max() <= 1.0
+        case _:
+            pass
