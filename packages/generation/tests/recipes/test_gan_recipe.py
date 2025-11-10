@@ -68,14 +68,18 @@ class TestGANRecipe:
         }
 
         train_ds = RandomAudioDataset(
-            n_examples=100, n_sources=2, n_channels=1, n_samples=100
+            n_examples=10, n_sources=2, n_channels=1, n_samples=100
         )
         train_ds.setup()
-
+        validation_ds = RandomAudioDataset(
+            n_examples=10, n_sources=2, n_channels=1, n_samples=100
+        )
+        validation_ds.setup()
         dm = GenericDataModule(
             datasets={
                 "train": {"main": train_ds},
-                "batch_size": {"train": 1},
+                "validation": {"main": validation_ds},
+                "batch_size": {"train": 1, "validation": 1},
             },
             num_workers=1,
         )

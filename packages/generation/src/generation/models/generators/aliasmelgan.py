@@ -5,21 +5,34 @@ from omegaconf import II
 from torch import Tensor, nn
 from torch.nn.utils.parametrizations import weight_norm
 from traincore.config_stores.models import model_store
+from traincore.models.activations.afa import Activation1d
+from traincore.models.activations.snake import Snake, SnakeBeta
 from traincore.models.encoders.protocol import EncoderProtocol
 
-__all__ = ["MelGanGenerator"]
+__all__ = ["AliasFreeMelGanGenerator"]
 
 
 class ResnetBlock(nn.Module):
     """The exact resnet block used by MelGan."""
 
-    def __init__(self, dim: int, dilation: int = 1) -> None:
+    def __init__(self, dim: int, dilation: int = 1, activation: str = "snake") -> None:
         super().__init__()
+        match activation:
+            case "Snake":
+                activation_cls = Snake
+            case "SnakeBeta":
+                activation_cls = SnakeBeta
+            case _:
+                activation_cls = nn.LeakyReLU
+        if activation_cls is None:
+            raise ValueError(
+                f"unknown activation: '{activation}'. Possible choices are: Snake, SnakeBeta"
+            )
         self.block = nn.Sequential(
-            nn.LeakyReLU(0.2),
+            Activation1d(activation_cls(dim)),
             nn.ReflectionPad1d(dilation),
             weight_norm(nn.Conv1d(dim, dim, kernel_size=3, dilation=dilation)),
-            nn.LeakyReLU(0.2),
+            Activation1d(activation_cls(dim)),
             weight_norm(nn.Conv1d(dim, dim, kernel_size=1)),
         )
         self.shortcut = weight_norm(nn.Conv1d(dim, dim, kernel_size=1))
@@ -28,8 +41,8 @@ class ResnetBlock(nn.Module):
         return self.shortcut(x) + self.block(x)
 
 
-@model_store(name="melgan", n_mels=II(".encoder.n_mels"))
-class MelGanGenerator(nn.Module):
+@model_store(name="melganaf", n_mels=II(".encoder.n_mels"))
+class AliasFreeMelGanGenerator(nn.Module):
     # TODO: should we have a base class?
     def __init__(
         self,
@@ -93,6 +106,7 @@ class MelGanGenerator(nn.Module):
                     )
                 ),
             ]
+
             for j in range(self.n_residual_layers):
                 model += [
                     ResnetBlock(mult * ngf // 2, dilation=3**j),

@@ -16,6 +16,8 @@ dependencies = [
     "torch>=2.8.0",
     "torchaudio>=2.8.0",
     "torchvision>=0.23.0",
+    "nnaudio>=0.3.3",
+    "pedalboard>=0.9.19",
 ]
 
 [tool.ruff.lint]

@@ -1,6 +1,7 @@
-from torch import nn, Tensor
 import torch
 import torchaudio
+from omegaconf import II
+from torch import Tensor, nn
 from traincore.config_stores.criterions import criterion_store
 
 
@@ -12,7 +13,7 @@ def safe_log(x: Tensor) -> Tensor:
 class MelSpecReconstructionLoss(nn.Module):
     def __init__(
         self,
-        sample_rate: int = 48000,
+        sample_rate: float = 48000.0,
         n_fft: int = 1024,
         hop_length: int = 256,
         n_mels: int = 100,
@@ -20,7 +21,7 @@ class MelSpecReconstructionLoss(nn.Module):
     ):
         super().__init__()
         self.mel_spec = torchaudio.transforms.MelSpectrogram(
-            sample_rate=sample_rate,
+            sample_rate=int(sample_rate),
             n_fft=n_fft,
             hop_length=hop_length,
             n_mels=n_mels,
@@ -38,11 +39,11 @@ class MelSpecReconstructionLoss(nn.Module):
         return loss * self.weight_
 
 
-@criterion_store(name="multimel")
+@criterion_store(name="multimel", sample_rate=II("recipe.model.generator.sample_rate"))
 class MultiMelSpecReconstructionLoss(nn.Module):
     def __init__(
         self,
-        sample_rate: int = 48000,
+        sample_rate: float = 48000.0,
         n_fft: list[int] = [1024, 2048, 4096],
         hop_length: list[int] = [256, 512, 1024],
         n_mels: list[int] = [80, 160, 320],
