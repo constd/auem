@@ -13,12 +13,14 @@ class AuemClassifierBase(nn.Module):
         child_embedding_size: int,
         num_classes: int = 10,
         out_nonlinearity: str | None = None,
+        sample_rate: float = 22050.0,
     ) -> None:
         super().__init__()
 
         self.num_classes: int = 10
         self.class_layer: nn.Linear = nn.Linear(child_embedding_size, num_classes)
         self.out_nonlinearity: str | None = out_nonlinearity
+        self.sample_rate = sample_rate
 
     @abstractmethod
     def get_embedding(self, x: Tensor) -> Tensor:

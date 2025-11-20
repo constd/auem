@@ -35,6 +35,7 @@ callbacks:
       max_frames: null
 
 data:
+  data_sample_rate: ${recipe.model.generator.sample_rate}
   datasets:
     train:
       random:

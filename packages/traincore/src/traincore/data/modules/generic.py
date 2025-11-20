@@ -1,11 +1,22 @@
-from typing import TypedDict
+from typing import Callable, TypedDict
 
+from einops import rearrange
 from lightning.pytorch import LightningDataModule
 from lightning.pytorch.utilities.types import (
     EVAL_DATALOADERS,
     TRAIN_DATALOADERS,
 )
+from omegaconf import II
+from torch import clamp
 from torch.utils.data import DataLoader
+from torch_audiomentations import (
+    Compose,
+    Gain,
+    HighPassFilter,
+    Identity,
+    LowPassFilter,
+    OneOf,
+)
 
 from traincore.config_stores.datamodules import datamodule_store
 from traincore.data.sets.protocol import DatasetProtocol
@@ -35,12 +46,97 @@ def seed_worker(worker_id):
     random.seed(worker_seed)
 
 
-@datamodule_store(name="generic")
+@datamodule_store(name="generic", data_sample_rate=II("recipe.model.sample_rate"))
 class GenericDataModule(LightningDataModule):
-    def __init__(self, datasets: DatasetInputType, num_workers: int = 1) -> None:
+    def __init__(
+        self,
+        datasets: DatasetInputType,
+        num_workers: int = 1,
+        data_sample_rate: int | float = 22050.0,
+        augmentations: dict[str, dict[str, Callable]] | None = None,
+    ) -> None:
         super().__init__()
         self.datasets = datasets
         self.num_workers = num_workers
+
+        self.augmentations = {
+            "cpu": {
+                "aux": OneOf(
+                    transforms=[
+                        LowPassFilter(
+                            min_cutoff_freq=4000 / data_sample_rate,
+                            max_cutoff_freq=12000 / data_sample_rate,
+                            p=1.0,
+                            sample_rate=data_sample_rate,
+                            output_type="tensor",
+                        ),
+                        HighPassFilter(
+                            min_cutoff_freq=20 / data_sample_rate,
+                            max_cutoff_freq=800 / data_sample_rate,
+                            p=1.0,
+                            sample_rate=data_sample_rate,
+                            output_type="tensor",
+                        ),
+                        Identity(p=1.0),
+                    ],
+                    p=1.0,
+                ),
+                "inserts": Compose(
+                    transforms=[
+                        Gain(
+                            min_gain_in_db=-24,
+                            max_gain_in_db=3,
+                            sample_rate=data_sample_rate,
+                            output_type="tensor",
+                        )
+                    ]
+                ),
+            }
+        }
+
+    def on_before_batch_transfer(self, batch, dataloader_idx: int | None = None):
+        if self.trainer and self.trainer.training:
+            for dataset_name, batch_ in batch.items():
+                audio = batch_.pop("audio")
+                b, s, *_ = audio.size()
+                audio = rearrange(audio, "b s c t -> (b s) c t")
+                target_sources, aux_sources = audio.clone(), audio.clone()
+                if self.augmentations is not None and self.augmentations.get("cpu"):
+                    inserts = self.augmentations["cpu"].get("inserts")
+                    aux = self.augmentations["cpu"].get("aux")
+
+                    if inserts:
+                        target_sources = inserts(audio)
+                    if aux:
+                        aux_sources = aux(target_sources)
+
+                batch[dataset_name]["target"] = rearrange(
+                    target_sources, "(b s) c t -> b s c t", b=b, s=s
+                )
+                batch[dataset_name]["augmented"] = rearrange(
+                    aux_sources, "(b s) c t -> b s c t", b=b, s=s
+                )
+
+        return batch
+
+    def on_after_batch_transfer(self, batch, dataloader_idx: int | None = None):
+        """Mix the sources."""
+        if self.trainer and self.trainer.training:
+            for dataset_name, batch_ in batch.items():
+                target_sources, aux_sources = batch_["target"], batch_["augmented"]
+
+                target_sources = clamp(target_sources, min=-1, max=1)
+                aux_sources = clamp(aux_sources, min=-1, max=1)
+
+                batch[dataset_name]["target"] = target_sources.sum(1, keepdim=True)
+                batch[dataset_name]["augmented"]: (
+                    aux_sources.sum(1)
+                    if aux_sources
+                    else aux_sources.sum(1, keepdim=True)
+                )
+        else:
+            batch["target"] = batch["audio"].sum(1, keepdim=True)
+        return batch
 
     def prepare_data(self) -> None:
         # Download and tokenize data here

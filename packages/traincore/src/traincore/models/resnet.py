@@ -84,6 +84,7 @@ class SpectrogramResNet(torch_resnet.ResNet):
         self,
         encoder: EncoderProtocol | None = None,
         decoder: DecoderProtocol | None = None,
+        sample_rate: float = 22050.0,
         block: Type[BasicBlock] | Type[Bottleneck] = BasicBlock,
         layers: tuple[int, ...] = (2, 2, 2, 2),
         num_classes: int = 1000,
@@ -103,6 +104,7 @@ class SpectrogramResNet(torch_resnet.ResNet):
         nn.Module.__init__(self)
         self.encoder: EncoderProtocol | None = encoder
         self.decoder: EncoderProtocol | None = decoder
+        self.sample_rate = sample_rate
 
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d

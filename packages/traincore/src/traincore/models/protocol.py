@@ -17,5 +17,6 @@ class AuemModelProtocol(Protocol):
     # e2a: embedding -> audio
     # e2e: embedding -> embedding
     mtype: Literal["a2a", "e2a", "a2e", "e2e"]
+    sample_rate: float
 
     def forward(self, *args, **kwargs) -> dict[str, Tensor | str]: ...

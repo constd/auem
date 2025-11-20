@@ -1,15 +1,14 @@
-from lightning.pytorch.callbacks import Callback
-from traincore.data.sets import FolderDataset
-
-from lightning.pytorch import Trainer, LightningModule
+from lightning.pytorch import LightningModule, Trainer
 from lightning.pytorch import loggers as llog
+from lightning.pytorch.callbacks import Callback
 
 from traincore.config_stores.callbacks import callback_store
+from traincore.data.sets import FolderDataset
 
 
 @callback_store(name="audiologger")
 class LogAudio(Callback):
-    def __init__(self, dataset: FolderDataset, mix_of_interest: str = "mix") -> None:
+    def __init__(self, dataset: FolderDataset, mix_of_interest: str = "") -> None:
         self.dataset = dataset
         self.mix_of_interest: str = mix_of_interest
 

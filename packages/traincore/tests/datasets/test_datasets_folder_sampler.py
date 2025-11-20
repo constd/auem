@@ -48,7 +48,7 @@ def test_folder_sampler_should_return_a_audio_sample_for_each_sub_folder(
     for i in range(len(ds)):
         item = ds[i]
         assert isinstance(item, dict)
-        assert item["mix"].shape[-1] == n_frames
+        assert item["audio"].shape[-1] == n_frames
 
 
 def test_folder_sampler_should_handle_custom_glob_to_filter_desired_files(

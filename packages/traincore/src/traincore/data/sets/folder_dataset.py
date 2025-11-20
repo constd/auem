@@ -26,6 +26,7 @@ class FolderDataset:
         data_dir: str | Path = "/data/dataset_dir",
         glob_str: str | None = None,
         suffix: str = ".wav",
+        sources: tuple[str, ...] = ("voice",),
     ):
         self.target_sample_rate = target_sample_rate
         self.num_channels = num_channels
@@ -65,8 +66,6 @@ class FolderDataset:
 
         relative_path = datum.relative_to(self.data_dir).with_suffix("")
         return {
-            "mix": audio,
-            "mix_augmented": audio,
-            "target": audio,
+            "audio": audio,  # source channel time
             "id": f"{relative_path}",
         }
