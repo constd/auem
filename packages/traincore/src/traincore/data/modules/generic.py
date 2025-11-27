@@ -9,14 +9,6 @@ from lightning.pytorch.utilities.types import (
 from omegaconf import II
 from torch import clamp
 from torch.utils.data import DataLoader
-from torch_audiomentations import (
-    Compose,
-    Gain,
-    HighPassFilter,
-    Identity,
-    LowPassFilter,
-    OneOf,
-)
 
 from traincore.config_stores.datamodules import datamodule_store
 from traincore.data.sets.protocol import DatasetProtocol
@@ -53,53 +45,35 @@ class GenericDataModule(LightningDataModule):
         datasets: DatasetInputType,
         num_workers: int = 1,
         data_sample_rate: int | float = 22050.0,
+        # {
+        #   'cpu': {
+        #       'inserts': {
+        #           'gain': Callable,
+        #           'hpf': Callable
+        #       },
+        #       'aux': {
+        #           'one_of': Callable
+        #       }
+        #   },
+        #   'gpu': {
+        #       ...
+        #   }
+        # }
+        # augmentations: dict[str, dict[str, dict[str, Callable]]] | None = None,
         augmentations: dict[str, dict[str, Callable]] | None = None,
     ) -> None:
         super().__init__()
         self.datasets = datasets
         self.num_workers = num_workers
 
-        self.augmentations = {
-            "cpu": {
-                "aux": OneOf(
-                    transforms=[
-                        LowPassFilter(
-                            min_cutoff_freq=4000 / data_sample_rate,
-                            max_cutoff_freq=12000 / data_sample_rate,
-                            p=1.0,
-                            sample_rate=data_sample_rate,
-                            output_type="tensor",
-                        ),
-                        HighPassFilter(
-                            min_cutoff_freq=20 / data_sample_rate,
-                            max_cutoff_freq=800 / data_sample_rate,
-                            p=1.0,
-                            sample_rate=data_sample_rate,
-                            output_type="tensor",
-                        ),
-                        Identity(p=1.0),
-                    ],
-                    p=1.0,
-                ),
-                "inserts": Compose(
-                    transforms=[
-                        Gain(
-                            min_gain_in_db=-24,
-                            max_gain_in_db=3,
-                            sample_rate=data_sample_rate,
-                            output_type="tensor",
-                        )
-                    ]
-                ),
-            }
-        }
+        self.augmentations = augmentations
 
     def on_before_batch_transfer(self, batch, dataloader_idx: int | None = None):
         if self.trainer and self.trainer.training:
             for dataset_name, batch_ in batch.items():
                 audio = batch_.pop("audio")
-                b, s, *_ = audio.size()
-                audio = rearrange(audio, "b s c t -> (b s) c t")
+                b, s, c, *_ = audio.size()
+                audio = rearrange(audio, "b s c t -> (b s c) t")
                 target_sources, aux_sources = audio.clone(), audio.clone()
                 if self.augmentations is not None and self.augmentations.get("cpu"):
                     inserts = self.augmentations["cpu"].get("inserts")
@@ -111,10 +85,10 @@ class GenericDataModule(LightningDataModule):
                         aux_sources = aux(target_sources)
 
                 batch[dataset_name]["target"] = rearrange(
-                    target_sources, "(b s) c t -> b s c t", b=b, s=s
+                    target_sources, "(b s c) t -> b s c t", b=b, s=s, c=c
                 )
                 batch[dataset_name]["augmented"] = rearrange(
-                    aux_sources, "(b s) c t -> b s c t", b=b, s=s
+                    aux_sources, "(b s c) t -> b s c t", b=b, s=s, c=c
                 )
 
         return batch
