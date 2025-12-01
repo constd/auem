@@ -103,11 +103,7 @@ class GenericDataModule(LightningDataModule):
                 aux_sources = clamp(aux_sources, min=-1, max=1)
 
                 batch[dataset_name]["target"] = target_sources.sum(1, keepdim=True)
-                batch[dataset_name]["augmented"]: (
-                    aux_sources.sum(1)
-                    if aux_sources
-                    else aux_sources.sum(1, keepdim=True)
-                )
+                batch[dataset_name]["augmented"] = aux_sources.sum(1, keepdim=True)
         else:
             batch["target"] = batch["audio"].sum(1, keepdim=True)
         return batch
