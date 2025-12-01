@@ -8,7 +8,7 @@ from traincore.data.sets import FolderDataset
 
 @callback_store(name="audiologger")
 class LogAudio(Callback):
-    def __init__(self, dataset: FolderDataset, mix_of_interest: str = "") -> None:
+    def __init__(self, dataset: FolderDataset, mix_of_interest: str = "audio") -> None:
         self.dataset = dataset
         self.mix_of_interest: str = mix_of_interest
 

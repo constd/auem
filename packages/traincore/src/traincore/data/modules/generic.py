@@ -27,6 +27,16 @@ class DatasetInputType(TypedDict):
     batch_size: BatchSizes = BatchSizes(train=1, validation=1, test=1)
 
 
+class AugmentationsMixerType(TypedDict):
+    aux: Callable | None
+    inserts: Callable | None
+
+
+class AugmentationsDeviceType(TypedDict):
+    cpu: AugmentationsMixerType | None
+    gpu: AugmentationsMixerType | None
+
+
 def seed_worker(worker_id):
     import random
 
@@ -45,22 +55,7 @@ class GenericDataModule(LightningDataModule):
         datasets: DatasetInputType,
         num_workers: int = 1,
         data_sample_rate: int | float = 22050.0,
-        # {
-        #   'cpu': {
-        #       'inserts': {
-        #           'gain': Callable,
-        #           'hpf': Callable
-        #       },
-        #       'aux': {
-        #           'one_of': Callable
-        #       }
-        #   },
-        #   'gpu': {
-        #       ...
-        #   }
-        # }
-        # augmentations: dict[str, dict[str, dict[str, Callable]]] | None = None,
-        augmentations: dict[str, dict[str, Callable]] | None = None,
+        augmentations: AugmentationsDeviceType | None = None,
     ) -> None:
         super().__init__()
         self.datasets = datasets
