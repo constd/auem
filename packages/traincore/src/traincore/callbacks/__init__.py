@@ -14,8 +14,9 @@
 
 # __all__ = ["ConfusionCallback"]
 from traincore.callbacks.audio import LogAudio
+from traincore.callbacks.log_config import ConfigLogger
 
-__all__ = ["LogAudio"]
+__all__ = ["LogAudio", "ConfigLogger"]
 
 # def get_logger(
 #     logger: Logger | None,
