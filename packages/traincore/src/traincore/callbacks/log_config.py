@@ -29,39 +29,40 @@ if TYPE_CHECKING:
 __all__ = ["ConfigLogger"]
 
 
+def resolve_configuration(
+    config: DictConfig,
+) -> DictConfig:
+    """This function helps resolve all interpolations eagerly, so that we can see the final values of the entire config immediately.
+
+    Args:
+        config (DictConfig): the hydra configuration, usually the entire config of an experiment.
+
+    Returns:
+        DictConfig: the resolved configuration
+    """
+    OmegaConf.resolve(config)
+    return config
+
+
+def save_configuration(config: DictConfig, path: Path | str = ".") -> None:
+    """This function helps resolve all interpolations eagerly, so that we can see the final values of the entire config immediately.
+
+    Args:
+        config (DictConfig): the hydra configuration, usually the entire config of an experiment.
+        path (Path | str): the path to write the configuration to.
+
+    Returns:
+        DictConfig: the resolved configuration
+    """
+    config_resolved = resolve_configuration(config=config)
+    OmegaConf.save(config=config_resolved, f=path)
+
+
 @callback_store(name="config_log")
 class ConfigLogger(Callback):
     def __init__(self, config: DictConfig) -> None:
         super().__init__()
         self.config = config
-
-    def resolve_configuration(
-        self,
-        config: DictConfig,
-    ) -> DictConfig:
-        """This function helps resolve all interpolations eagerly, so that we can see the final values of the entire config immediately.
-
-        Args:
-            config (DictConfig): the hydra configuration, usually the entire config of an experiment.
-
-        Returns:
-            DictConfig: the resolved configuration
-        """
-        OmegaConf.resolve(config)
-        return config
-
-    def save_configuration(self, config: DictConfig, path: Path | str = ".") -> None:
-        """This function helps resolve all interpolations eagerly, so that we can see the final values of the entire config immediately.
-
-        Args:
-            config (DictConfig): the hydra configuration, usually the entire config of an experiment.
-            path (Path | str): the path to write the configuration to.
-
-        Returns:
-            DictConfig: the resolved configuration
-        """
-        config_resolved = self.resolve_configuration(config=config)
-        OmegaConf.save(config=config_resolved, f=path)
 
     @rank_zero_only
     def on_fit_start(
@@ -82,7 +83,7 @@ class ConfigLogger(Callback):
         # first, force-resolve the config and save it locally.
 
         config_path: str = self.config.paths.output_dir + "/config_resolved.yaml"
-        self.save_configuration(self.config, config_path)
+        save_configuration(self.config, config_path)
 
         logger = trainer.logger
         if logger is not None:

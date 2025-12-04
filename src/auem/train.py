@@ -2,10 +2,13 @@
 import os
 import random
 
+import hydra
 from hydra_zen import instantiate
 from lightning.pytorch import LightningDataModule, LightningModule, Trainer
 from lightning.pytorch.callbacks import Callback
+from lightning.pytorch.utilities.rank_zero import rank_zero_only
 from omegaconf import DictConfig
+from traincore.callbacks.log_config import save_configuration
 
 from auem.configs.mainconfig import train_store  # noqa
 
@@ -27,7 +30,18 @@ def seed_everything(seed: int):
     torch.backends.cudnn.benchmark = False
 
 
+@rank_zero_only
+def log_config(config: DictConfig) -> None:
+    config_path: str = (
+        hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
+        + "/config_resolved.yaml"
+    )
+    save_configuration(config, config_path)
+
+
 def train(config: DictConfig) -> None:
+    log_config(config)
+
     seed_everything(
         config.seed + int(os.getenv("LOCAL_RANK", "0")) * int(config.data.num_workers)
     )
