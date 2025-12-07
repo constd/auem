@@ -5,9 +5,9 @@ from typing import Any
 import torch
 from lightning import LightningModule
 from torch import Tensor, nn, optim
+from torch.optim.lr_scheduler import LRScheduler
 
 from traincore.config_stores.recipes import recipe_store
-from torch.optim.lr_scheduler import LRScheduler
 
 
 @recipe_store(name="simple")
@@ -37,7 +37,7 @@ class SimpleRecipe(LightningModule):
     ) -> Tensor | Mapping[str, Any] | None:
         total_loss = torch.tensor(0.0, device=self.device)
         for _, dataset in batch.items():
-            x, y = dataset["audio"], dataset["class"]
+            x, y = dataset["augmented"], dataset["class"]
             y_hat = self.model(x)
             loss = self.loss(y_hat, y.float())  # ty: ignore[possibly-missing-attribute]
             total_loss += loss

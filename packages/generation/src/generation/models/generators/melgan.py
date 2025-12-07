@@ -111,7 +111,7 @@ class MelGanGenerator(nn.Module):
 
     def forward(
         self,
-        x: Float[Tensor, "batch channel time"],
+        x: Float[Tensor, "batch ... channel time"],
     ) -> Float[Tensor, "batch source channel generated_time"]:
         X = self.encoder(x)
 

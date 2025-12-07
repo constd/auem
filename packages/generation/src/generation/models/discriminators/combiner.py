@@ -1,9 +1,10 @@
-from torch import nn, Tensor
-from traincore.config_stores.models import model_store
-from jaxtyping import Float
-from generation.models.discriminators.protocol import CombinerDiscriminatorReturnType
-
 from typing import Mapping
+
+from jaxtyping import Float
+from torch import Tensor, nn
+from traincore.config_stores.models import model_store
+
+from generation.models.discriminators.protocol import CombinerDiscriminatorReturnType
 
 
 @model_store(name="combiner", group="model/discriminator")

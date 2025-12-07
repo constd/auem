@@ -38,12 +38,14 @@ class SimpleCNNBase(AuemClassifierBase):
         conv_layer_def: list[tuple[int, int, tuple[int, ...]]] = DEFAULT_CONV_LAYER_DEF,
         dense_layer_def: list[int] = DEFAULT_DENSE_LAYER_DEF,
         out_nonlinearity: str | None = "softmax",
+        sample_rate: float = 22050.0,
     ):
         super(SimpleCNNBase, self).__init__(
             dense_layer_def[-1], num_classes, out_nonlinearity=out_nonlinearity
         )
         self.encoder: EncoderProtocol | None = encoder
         self.decoder: EncoderProtocol | None = decoder
+        self.sample_rate = sample_rate
 
         conv_layers = nn.ModuleList()
         dense_layers = nn.ModuleList()

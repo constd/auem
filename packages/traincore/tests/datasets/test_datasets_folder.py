@@ -27,7 +27,7 @@ def test_folder_dataset_should_return_datums_of_max_frame_length(folder_of_audio
     ds.setup()
 
     item = ds[0]
-    audio = item["mix"]
+    audio = item["audio"]
 
     assert isinstance(audio, (Tensor, np.typing.NDArray))
     assert audio.dim() == 3

@@ -1,10 +1,13 @@
-from typing import TypedDict
+from typing import Callable, TypedDict
 
+from einops import rearrange
 from lightning.pytorch import LightningDataModule
 from lightning.pytorch.utilities.types import (
     EVAL_DATALOADERS,
     TRAIN_DATALOADERS,
 )
+from omegaconf import II
+from torch import clamp
 from torch.utils.data import DataLoader
 
 from traincore.config_stores.datamodules import datamodule_store
@@ -24,6 +27,16 @@ class DatasetInputType(TypedDict):
     batch_size: BatchSizes = BatchSizes(train=1, validation=1, test=1)
 
 
+class AugmentationsMixerType(TypedDict):
+    aux: Callable | None
+    inserts: Callable | None
+
+
+class AugmentationsDeviceType(TypedDict):
+    cpu: AugmentationsMixerType | None
+    gpu: AugmentationsMixerType | None
+
+
 def seed_worker(worker_id):
     import random
 
@@ -35,12 +48,60 @@ def seed_worker(worker_id):
     random.seed(worker_seed)
 
 
-@datamodule_store(name="generic")
+@datamodule_store(name="generic", data_sample_rate=II("recipe.model.sample_rate"))
 class GenericDataModule(LightningDataModule):
-    def __init__(self, datasets: DatasetInputType, num_workers: int = 1) -> None:
+    def __init__(
+        self,
+        datasets: DatasetInputType,
+        num_workers: int = 1,
+        data_sample_rate: int | float = 22050.0,
+        augmentations: AugmentationsDeviceType | None = None,
+    ) -> None:
         super().__init__()
         self.datasets = datasets
         self.num_workers = num_workers
+
+        self.augmentations = augmentations
+
+    def on_before_batch_transfer(self, batch, dataloader_idx: int | None = None):
+        if self.trainer and self.trainer.training:
+            for dataset_name, batch_ in batch.items():
+                audio = batch_.pop("audio")
+                b, s, c, *_ = audio.size()
+                audio = rearrange(audio, "b s c t -> (b s c) t")
+                target_sources, aux_sources = audio.clone(), audio.clone()
+                if self.augmentations is not None and self.augmentations.get("cpu"):
+                    inserts = self.augmentations["cpu"].get("inserts")
+                    aux = self.augmentations["cpu"].get("aux")
+
+                    if inserts:
+                        target_sources = inserts(audio)
+                    if aux:
+                        aux_sources = aux(target_sources)
+
+                batch[dataset_name]["target"] = rearrange(
+                    target_sources, "(b s c) t -> b s c t", b=b, s=s, c=c
+                )
+                batch[dataset_name]["augmented"] = rearrange(
+                    aux_sources, "(b s c) t -> b s c t", b=b, s=s, c=c
+                )
+
+        return batch
+
+    def on_after_batch_transfer(self, batch, dataloader_idx: int | None = None):
+        """Mix the sources."""
+        if self.trainer and self.trainer.training:
+            for dataset_name, batch_ in batch.items():
+                target_sources, aux_sources = batch_["target"], batch_["augmented"]
+
+                target_sources = clamp(target_sources, min=-1, max=1)
+                aux_sources = clamp(aux_sources, min=-1, max=1)
+
+                batch[dataset_name]["target"] = target_sources.sum(1, keepdim=True)
+                batch[dataset_name]["augmented"] = aux_sources.sum(1, keepdim=True)
+        else:
+            batch["target"] = batch["audio"].sum(1, keepdim=True)
+        return batch
 
     def prepare_data(self) -> None:
         # Download and tokenize data here

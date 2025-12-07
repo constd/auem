@@ -43,7 +43,7 @@ class GanTrainRecipe(LightningModule):
 
         for dataset_name, dataset in batch.items():
             # get current batch
-            augmented_mix = dataset["mix_augmented"]
+            augmented_mix = dataset["augmented"]
             clean_mix = dataset["target"]
 
             generated_mix = self.model.generator(augmented_mix)

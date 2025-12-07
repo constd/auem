@@ -45,8 +45,6 @@ class RandomAudioDataset(torch.utils.data.Dataset):
         if self.data is not None:
             return {
                 "audio": self.data[index],
-                "mix_augmented": self.data[index].mean(0),
-                "target": self.data[index].mean(0, keepdim=True),
             }
         return {}
 

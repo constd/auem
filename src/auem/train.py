@@ -12,6 +12,13 @@ from traincore.callbacks.log_config import save_configuration
 
 from auem.configs.mainconfig import train_store  # noqa
 
+try:
+    from auementations.config import auementations_store  # noqa
+
+    auementations_store.add_to_hydra_store()
+except ImportError:
+    pass
+
 
 def seed_everything(seed: int):
     import os

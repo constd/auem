@@ -26,7 +26,10 @@ class STFTEncoder(Module):
 
     def forward(
         self, x: Float[Tensor, "batch channel time"]
-    ) -> Float[Tensor, "batch channel frequency time"]:
+    ) -> (
+        Float[Tensor, "batch ... freq timeframes"]
+        | Float[Tensor, "batch ... freq timeframes imag_real"]
+    ):
         b, c, t = x.size()
         # simplify shape
         x_ = rearrange(x, "b c t -> (b c) t")
@@ -42,5 +45,5 @@ class STFTEncoder(Module):
             pad_mode="reflect",
         )
         # get back to the original batch/channels
-        X = rearrange(X_, "(b c) f t -> b c f t")
+        X = rearrange(X_, "(b c) f t -> b c f t", b=b, c=c)
         return torch.view_as_real(X)
