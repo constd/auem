@@ -7,7 +7,7 @@ from lightning.pytorch.utilities.types import (
     TRAIN_DATALOADERS,
 )
 from omegaconf import II
-from torch import clamp
+from torch import Tensor, clamp
 from torch.utils.data import DataLoader
 
 from traincore.config_stores.datamodules import datamodule_store
@@ -88,14 +88,29 @@ class GenericDataModule(LightningDataModule):
 
         return batch
 
+    def get_scaling_factor_for_normalization(self, batched_audio_sources) -> Tensor:
+        """
+        accepts a batch of (batch source channel time) -> normalize if > 1 ->  (batch source channel time)
+        """
+        mix = batched_audio_sources.sum(dim=1, keepdim=True)
+
+        mix_peaks = mix.abs().amax(dim=(1, 2, 3), keepdim=True)
+
+        scale = mix_peaks.clamp(min=1.0)
+        return scale.unsqueeze(1)
+
     def on_after_batch_transfer(self, batch, dataloader_idx: int | None = None):
         """Mix the sources."""
         if self.trainer and self.trainer.training:
             for dataset_name, batch_ in batch.items():
                 target_sources, aux_sources = batch_["target"], batch_["augmented"]
 
-                target_sources = clamp(target_sources, min=-1, max=1)
-                aux_sources = clamp(aux_sources, min=-1, max=1)
+                # target_sources = clamp(target_sources, min=-1, max=1)
+                # aux_sources = clamp(aux_sources, min=-1, max=1)
+                scale = self.get_scaling_factor_for_normalization(target_sources)
+
+                target_sources /= scale
+                aux_sources /= scale
 
                 batch[dataset_name]["target"] = target_sources.sum(1, keepdim=True)
                 batch[dataset_name]["augmented"] = aux_sources.sum(1, keepdim=True)
