@@ -97,7 +97,7 @@ class GenericDataModule(LightningDataModule):
         mix_peaks = mix.abs().amax(dim=(1, 2, 3), keepdim=True)
 
         scale = mix_peaks.clamp(min=1.0)
-        return scale.unsqueeze(1)
+        return scale
 
     def on_after_batch_transfer(self, batch, dataloader_idx: int | None = None):
         """Mix the sources."""
