@@ -56,9 +56,11 @@ class AliasFreeMelGanGenerator(nn.Module):
         sample_rate: float = 44100.0,
         max_frames: int = -1,
         num_channels: int = 1,
+        num_bands: int = 1,
     ) -> None:
         super().__init__()
         self.encoder = encoder
+        self.num_bands: int = num_bands
 
         self.n_mels = n_mels
         self.ratios = ratios
@@ -83,7 +85,7 @@ class AliasFreeMelGanGenerator(nn.Module):
         # in Conv
         model.append(
             nn.Conv1d(
-                self.n_mels,
+                self.n_mels // self.num_bands,
                 mult * ngf,
                 kernel_size=self.in_out_kernel_size,
                 stride=1,
@@ -94,7 +96,7 @@ class AliasFreeMelGanGenerator(nn.Module):
         # upsample to raw audio scale
         for _, r in enumerate(self.ratios):
             model += [
-                nn.LeakyReLU(0.2),
+                Activation1d(Snake(mult * ngf)),  # nn.LeakyReLU(0.2),
                 weight_norm(
                     nn.ConvTranspose1d(
                         mult * ngf,
@@ -115,12 +117,13 @@ class AliasFreeMelGanGenerator(nn.Module):
             mult //= 2
 
         model += [
-            nn.LeakyReLU(0.2),
+            Activation1d(Snake(mult * ngf)),  # nn.LeakyReLU(0.2),
             nn.ReflectionPad1d(3),
             weight_norm(nn.Conv1d(ngf, self.output_channels, kernel_size=7, padding=0)),
         ]
         if final_activation and getattr(nn, final_activation, None):
-            model.append(getattr(nn, final_activation)())
+            # model.append(getattr(nn, final_activation)())
+            model.append(Activation1d(Snake(self.output_channels)))
         self.model = nn.Sequential(*model)
 
     def forward(
@@ -134,11 +137,17 @@ class AliasFreeMelGanGenerator(nn.Module):
             case 4:
                 b, c, f, t = X.shape
                 s = 1
+                X = X.reshape(b, c, self.num_bands, f // self.num_bands, t)
+                X = X.reshape(b, c * self.num_bands, f // self.num_bands, t)
                 X = rearrange(X, "b c f t -> (b c) f t")
             case 5:
                 b, s, c, f, t = X.shape
+                X = X.reshape(b, s, c, self.num_bands, f // self.num_bands, t)
+                X = X.reshape(b, s, c * self.num_bands, f // self.num_bands, t)
                 X = rearrange(X, "b s c f t -> (b s c) f t")
             case _:
                 raise ValueError(f"Unsupported input dimension: {X.dim()}")
         X_heart = self.model(X)
-        return rearrange(X_heart, "(b s c) 1 t -> b s c t", b=b, s=s, c=c)
+        return rearrange(
+            X_heart, "(b s c) 1 t -> b s c t", b=b, s=s, c=self.output_channels
+        )
