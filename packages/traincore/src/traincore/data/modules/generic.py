@@ -7,7 +7,7 @@ from lightning.pytorch.utilities.types import (
     TRAIN_DATALOADERS,
 )
 from omegaconf import II
-from torch import Tensor, clamp
+from torch import Tensor, randn_like
 from torch.utils.data import DataLoader
 
 from traincore.config_stores.datamodules import datamodule_store
@@ -66,7 +66,8 @@ class GenericDataModule(LightningDataModule):
     def on_before_batch_transfer(self, batch, dataloader_idx: int | None = None):
         if self.trainer and self.trainer.training:
             for dataset_name, batch_ in batch.items():
-                audio = batch_.pop("audio")
+                audio: Tensor = batch_.pop("audio")
+                audio += randn_like(audio) * 1e-8
                 b, s, c, *_ = audio.size()
                 audio = rearrange(audio, "b s c t -> (b s c) t")
                 target_sources, aux_sources = audio.clone(), audio.clone()
