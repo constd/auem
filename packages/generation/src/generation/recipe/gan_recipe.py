@@ -19,6 +19,7 @@ class GanTrainRecipe(LightningModule):
         scheduler: dict[str, Any] | None = {},
         ema: None | Module | partial = None,
         metrics: dict[str, Any] | None = None,
+        num_frozen_steps: int = 0,
     ):
         super().__init__()
         self.model = model
@@ -27,6 +28,7 @@ class GanTrainRecipe(LightningModule):
         self.scheduler = scheduler
         self.ema = ema
         self.metrics = metrics
+        self.num_frozen_steps: int = num_frozen_steps
 
         self.automatic_optimization = False
 
@@ -61,7 +63,7 @@ class GanTrainRecipe(LightningModule):
 
             discriminator_loss = self.loss.discriminator(discriminator_output)
 
-            if self.global_step >= 10000:
+            if self.global_step >= self.num_frozen_steps:
                 discriminator_optimizer.zero_grad()
                 self.manual_backward(discriminator_loss["loss"], retain_graph=True)
                 discriminator_optimizer.step()
@@ -77,7 +79,7 @@ class GanTrainRecipe(LightningModule):
                 clean_mix,
             )
 
-            if self.global_step >= 10000:
+            if self.global_step >= self.num_frozen_steps:
                 total_loss = (
                     generator_loss["loss"] + feature_matching_loss + reconstruction_loss
                 )
