@@ -48,6 +48,6 @@ metric_store(
 )
 metric_store(
     tma.SignalDistortionRatio,
-    name="sisnr",
+    name="sdr",
     populate_full_signature=True,
 )
