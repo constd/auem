@@ -52,3 +52,17 @@ def test_gan_recipe_with_cqt_discriminator():
     # - /model/discriminator@recipe.model.discriminator.discriminators.ms: multiscale
 
     auem.train.train(config)
+
+
+def test_gan_recipe_with_metrics():
+    with initialize(
+        config_path="../src/auem/configs",
+        job_name="test",
+        version_base="1.3",
+    ):
+        config = compose(
+            config_name="train_config",
+            overrides=["+experiment=tests/metrics"],
+        )
+
+    auem.train.train(config)

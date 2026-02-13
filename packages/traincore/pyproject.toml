@@ -18,6 +18,8 @@ dependencies = [
     "torchvision>=0.23.0",
     "nnaudio>=0.3.3",
     "pedalboard>=0.9.19",
+    "torchmetrics[audio]",
+    "comet-ml"
 ]
 
 [tool.ruff.lint]
